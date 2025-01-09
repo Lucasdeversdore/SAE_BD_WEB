@@ -1,3 +1,4 @@
+
 INSERT INTO PERSONNE (idPersonne, prenom, nom, numTel, email, poids) VALUES 
 (1, 'Alice', 'Martin', 612345678, 'alice@example.com', 65.5),
 (2, 'Bob', 'Dupont', 613456789, 'bob@example.com', 70.0); 
@@ -27,5 +28,3 @@ INSERT INTO PARTICIPER (idSeance, idPoney) VALUES
 INSERT INTO ASSISTER (idCl, idSeance, statutPayement, restePayement) VALUES 
 (1, 1, 'Payé', 0),
 (2, 1, 'Non Payé', 50);
-
-

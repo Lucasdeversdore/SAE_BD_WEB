@@ -1,199 +1,112 @@
+
+DROP TABLE IF EXISTS PARTICIPER;
+DROP TABLE IF EXISTS ASSISTER;
+DROP TABLE IF EXISTS RAJOUTER;
+DROP TABLE IF EXISTS SEANCE;
+DROP TABLE IF EXISTS CLIENT;
+DROP TABLE IF EXISTS HISTORIQUE;
+DROP TABLE IF EXISTS PONEY;
+DROP TABLE IF EXISTS COURS;
+DROP TABLE IF EXISTS PERSONNE;
+
 CREATE TABLE ASSISTER (
+  idCl           INTEGER NOT NULL,
+  idSeance       INTEGER NOT NULL,
+  statutPayement TEXT,
+  restePayement  INTEGER,
   PRIMARY KEY (idCl, idSeance),
-  idCl           int(8) NOT NULL,
-  idSeance       int(8) NOT NULL,
-  statutPayement VARCHAR(20),
-  restePayement  int(42)
+  FOREIGN KEY (idCl) REFERENCES CLIENT (idCl),
+  FOREIGN KEY (idSeance) REFERENCES SEANCE (idSeance)
 );
 
 CREATE TABLE CLIENT (
-  PRIMARY KEY (idCl, idPersonne),
-  idCl            int(8) NOT NULL,
-  idPersonne int(8) NOT NULL,
+  idCl            INTEGER NOT NULL,
+  idPersonne      INTEGER NOT NULL,
   dateDeNaissance DATE,
-  niveau          VARCHAR(42),
-  cotisation      VARCHAR(42)
+  niveau          TEXT,
+  cotisation      TEXT,
+  PRIMARY KEY (idCl, idPersonne),
+  FOREIGN KEY (idPersonne) REFERENCES PERSONNE (idPersonne)
 );
 
 CREATE TABLE COURS (
-  PRIMARY KEY (idCours),
-  idCours   int(8) NOT NULL,
-  typeCours VARCHAR(42)
+  idCours   INTEGER PRIMARY KEY,
+  typeCours TEXT
 );
 
 CREATE TABLE HISTORIQUE (
-  PRIMARY KEY (idSuivi),
-  idSuivi          int(8) NOT NULL,
+  idSuivi          INTEGER PRIMARY KEY,
   dateAchat        DATE,
-  descriptionAchat VARCHAR(42)
+  descriptionAchat TEXT
 );
 
 CREATE TABLE PARTICIPER (
+  idSeance INTEGER NOT NULL,
+  idPoney  INTEGER NOT NULL,
   PRIMARY KEY (idSeance, idPoney),
-  idSeance int(8) NOT NULL,
-  idPoney  int(8) NOT NULL
+  FOREIGN KEY (idPoney) REFERENCES PONEY (idPoney),
+  FOREIGN KEY (idSeance) REFERENCES SEANCE (idSeance)
 );
 
-CREATE TABLE PERSONNE(
-  PRIMARY KEY (idPersonne),
-  idPersonne int(8) NOT NULL,
-  prenom     VARCHAR(255),
-  nom        VARCHAR(255),
-  numTel     int(10),
-  email      VARCHAR(255),
-  poids      DECIMAL(10,2)
+CREATE TABLE PERSONNE (
+  idPersonne INTEGER PRIMARY KEY AUTOINCREMENT,
+  prenom     TEXT,
+  nom        TEXT,
+  numTel     INTEGER UNIQUE,
+  email      TEXT UNIQUE,
+  poids      REAL,
+  mdp        TEXT
 );
 
 CREATE TABLE PONEY (
-  PRIMARY KEY (idPoney),
-  idPoney  int(8) NOT NULL,
-  nomP     VARCHAR(255),
-  poidsMax DECIMAL(10,2)
+  idPoney  INTEGER PRIMARY KEY,
+  nomP     TEXT,
+  poidsMax REAL
 );
 
 CREATE TABLE RAJOUTER (
+  idCl    INTEGER NOT NULL,
+  idSuivi INTEGER NOT NULL,
   PRIMARY KEY (idCl, idSuivi),
-  idCl    int(8) NOT NULL,
-  idSuivi int(8) NOT NULL
+  FOREIGN KEY (idCl) REFERENCES CLIENT (idCl),
+  FOREIGN KEY (idSuivi) REFERENCES HISTORIQUE (idSuivi)
 );
 
 CREATE TABLE SEANCE (
-  PRIMARY KEY (idSeance),
-  idSeance      int(8) NOT NULL,
+  idSeance      INTEGER PRIMARY KEY,
   dateDebut     DATE,
   dateFin       DATE,
-  duree         int(1),
-  particulier   boolean,
-  nbPersonneMax int,
-  niveau        VARCHAR(42),
-  idMoniteur    int(8) NOT NULL,
-  idCours       int(8) NOT NULL
+  duree         INTEGER,
+  particulier   BOOLEAN,
+  nbPersonneMax INTEGER,
+  niveau        TEXT,
+  idMoniteur    INTEGER NOT NULL,
+  idCours       INTEGER NOT NULL,
+  FOREIGN KEY (idCours) REFERENCES COURS (idCours)
 );
 
-ALTER TABLE CLIENT ADD FOREIGN KEY (idPersonne) REFERENCES PERSONNE (idPersonne);
-
-
-ALTER TABLE ASSISTER ADD FOREIGN KEY (idSeance) REFERENCES SEANCE (idSeance);
-ALTER TABLE ASSISTER ADD FOREIGN KEY (idCl) REFERENCES CLIENT (idCl);
-
-ALTER TABLE PARTICIPER ADD FOREIGN KEY (idPoney) REFERENCES PONEY (idPoney);
-ALTER TABLE PARTICIPER ADD FOREIGN KEY (idSeance) REFERENCES SEANCE (idSeance);
-
-ALTER TABLE RAJOUTER ADD FOREIGN KEY (idSuivi) REFERENCES HISTORIQUE (idSuivi);
-ALTER TABLE RAJOUTER ADD FOREIGN KEY (idCl) REFERENCES CLIENT (idCl);
-
-ALTER TABLE SEANCE ADD FOREIGN KEY (idCours) REFERENCES COURS (idCours);
-
-delimiter |
-CREATE OR REPLACE TRIGGER VerifNbParticipants
+-- Trigger: Vérification du nombre maximum de participants
+CREATE TRIGGER VerifNbParticipants
 BEFORE INSERT ON PARTICIPER
-FOR EACH ROW
+WHEN (SELECT COUNT(*) FROM PARTICIPER WHERE idSeance = NEW.idSeance) >= 
+     (SELECT nbPersonneMax FROM SEANCE WHERE idSeance = NEW.idSeance)
 BEGIN
-  DECLARE maxPersonnes INT;
-  SELECT nbPersonneMax INTO maxPersonnes FROM SEANCE WHERE idSeance = NEW.idSeance;
-  IF (SELECT COUNT(*) FROM PARTICIPER WHERE idSeance = NEW.idSeance) >= maxPersonnes THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Nombre maximum de participants atteint pour cette séance.';
-  END IF;
-END|
-delimiter ;
-
-delimiter |
-CREATE OR REPLACE TRIGGER VerifNbParticipants
-BEFORE UPDATE ON PARTICIPER
-FOR EACH ROW
-BEGIN
-  DECLARE maxPersonnes INT;
-  SELECT nbPersonneMax INTO maxPersonnes FROM SEANCE WHERE idSeance = NEW.idSeance;
-  IF (SELECT COUNT(*) FROM PARTICIPER WHERE idSeance = NEW.idSeance) >= maxPersonnes THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Nombre maximum de participants atteint pour cette séance.';
-  END IF;
-END|
-delimiter ;
-
-delimiter |
-CREATE OR REPLACE TRIGGER VerifReposPoney
-BEFORE INSERT ON PARTICIPER
-FOR EACH ROW
-BEGIN
-    DECLARE dernierCoursFin DATETIME;
-    DECLARE dureeTotale INT;
-
-    -- Trouver la fin du dernier cours et la durée totale des cours consécutifs
-    SELECT MAX(S.dateFin)
-    INTO dernierCoursFin
-    FROM SEANCE S
-    JOIN PARTICIPER P ON S.idSeance = P.idSeance
-    WHERE P.idPoney = NEW.idPoney;
-
-    -- Vérifier si le poney doit avoir un repos
-    IF dernierCoursFin IS NOT NULL AND 
-       TIMESTAMPDIFF(HOUR, dernierCoursFin, (SELECT dateDebut FROM SEANCE WHERE idSeance = NEW.idSeance)) < 1 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Le poney doit avoir un repos d’au moins 1 heure après 2 heures de cours.';
-    END IF;
+  SELECT RAISE(ABORT, 'Nombre maximum de participants atteint pour cette séance.');
 END;
-delimiter ;
 
-delimiter |
-CREATE OR REPLACE TRIGGER VerifReposPoney
-BEFORE UPDATE ON PARTICIPER
-FOR EACH ROW
-BEGIN
-    DECLARE dernierCoursFin DATETIME;
-    DECLARE dureeTotale INT;
-
-    SELECT MAX(S.dateFin), SUM(S.duree)
-    INTO dernierCoursFin, dureeTotale
-    FROM SEANCE S
-    JOIN PARTICIPER P ON S.idSeance = P.idSeance
-    WHERE P.idPoney = NEW.idPoney;
-    IF dernierCoursFin IS NOT NULL AND 
-       dureeTotale >= 2 AND 
-       TIMESTAMPDIFF(HOUR, dernierCoursFin, (SELECT dateDebut FROM SEANCE WHERE idSeance = NEW.idSeance)) < 1 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Le poney doit avoir un repos d’au moins 1 heure après 2 heures de cours.';
-    END IF;
-END;
-delimiter ;
-
-delimiter |
-CREATE OR REPLACE TRIGGER VerifDureeCours
+-- Trigger: Vérification de la durée du cours
+CREATE TRIGGER VerifDureeCours
 BEFORE INSERT ON SEANCE
-FOR EACH ROW
+WHEN NEW.duree NOT IN (1, 2)
 BEGIN
-  IF NEW.duree !=1 THEN
-    RAISE(FAIL, 'La quantite commandee doit être inférieur ou égale à la quantité stocké');
-  END IF;
-END|
-delimiter ;
+  SELECT RAISE(ABORT, 'La durée du cours doit être de 1 ou 2 heures.');
+END;
 
-delimiter |
-CREATE OR REPLACE TRIGGER VerifDureeCours
-BEFORE UPDATE ON SEANCE
-FOR EACH ROW
+-- Trigger: Vérification des mots de passe
+CREATE TRIGGER verif_mdp
+BEFORE INSERT ON PERSONNE
+WHEN NEW.mdp NOT GLOB '*[A-Z]*' OR NEW.mdp NOT GLOB '*[0-9]*' OR NEW.mdp NOT GLOB '*[!@#$%^&*()-_=+{}|;:<>,.?]*'
 BEGIN
-  IF NEW.duree !=1 or NEW.duree !=2 THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Un cours ne peut durer que 1 ou 2 heures.';
-  END IF;
-END|
-delimiter ;
+  SELECT RAISE(ABORT, 'Le mot de passe doit contenir au moins une majuscule, un chiffre, et un caractère spécial.');
+END;
 
-
-delimiter |
-CREATE OR REPLACE TRIGGER VerifNbParticipants
-BEFORE INSERT ON PARTICIPER
-FOR EACH ROW
-BEGIN
-  DECLARE nbParticipants INT DEFAULT 0;
-  DECLARE maxPersonnes INT DEFAULT 0;
-  SELECT nbPersonneMax INTO maxPersonnes FROM SEANCE WHERE idSeance = NEW.idSeance;
-  SELECT COUNT(*) INTO nbParticipants FROM PARTICIPER WHERE idSeance = NEW.idSeance;
-  IF nbParticipants >= maxPersonnes THEN
-    SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Nombre maximum de participants atteint pour cette séance.';
-  END IF;
-END|
-delimiter ;
