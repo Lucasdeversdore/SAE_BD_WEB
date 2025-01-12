@@ -71,6 +71,7 @@ session_start();
             <a href="index.php">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
+            <a href="mes_reservations.php">Mes Réservations</a>
         </div>
         <div>
             <?php if (isset($_SESSION['user_id'])): ?>

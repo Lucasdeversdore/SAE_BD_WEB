@@ -122,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="index.php">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
+            <a href="mes_reservations.php">Mes Réservations</a>
         </div>
         <div>
             <a href="register.php">Inscription</a>
