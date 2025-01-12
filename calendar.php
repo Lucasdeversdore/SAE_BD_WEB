@@ -10,7 +10,7 @@ $dateDebut = date('Y-m-d', strtotime("now +$offset week"));
 $dateFin = date('Y-m-d', strtotime("now +$offset week +6 days"));
 
 // Requête pour récupérer les séances de la semaine sélectionnée
-$query = "SELECT strftime('%w', dateDebut) AS jour, 
+$query = "SELECT (strftime('%w', dateDebut) + 6) % 7 AS jour, 
                  strftime('%H:%M', dateDebut) AS heure, 
                  duree 
           FROM SEANCE 
@@ -24,7 +24,7 @@ $seances = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Créneaux horaires et jours de la semaine
 $heures = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
-$jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+$jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 ?>
 
 <!DOCTYPE html>
@@ -152,6 +152,7 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
             <a href="index.php">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
+            <a href="mes_reservations.php">Mes Réservations</a>
         </div>
         <div class="right-links">
             <?php if (isset($_SESSION['user_id'])): ?>
