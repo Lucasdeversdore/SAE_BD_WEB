@@ -1,5 +1,48 @@
 <?php
 session_start();
+require 'db.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+// Récupérer le poids du client connecté
+$sqlClient = "SELECT poids FROM PERSONNE WHERE idPersonne = ?";
+$stmtClient = $pdo->prepare($sqlClient);
+$stmtClient->execute([$_SESSION['user_id']]);
+$client = $stmtClient->fetch(PDO::FETCH_ASSOC);
+
+if (!$client) {
+    echo "<p style='color: red;'>Erreur : Client introuvable.</p>";
+    exit;
+}
+
+$poidsClient = $client['poids'];
+
+// Récupérer les poneys disponibles pour le poids du client
+$sql = "SELECT idPoney, nomP, poidsMax, imagePoney FROM PONEY WHERE poidsMax >= ?";
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$poidsClient]);
+$poneys = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Gérer la réservation
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $idPoney = $_POST['poney_id'];
+    $idSeance = $_POST['seance_id'];
+    $idClient = $_SESSION['user_id'];
+
+    $sqlInsert = "INSERT INTO PARTICIPER (idSeance, idPoney, idCl) VALUES (?, ?, ?)";
+    $stmtInsert = $pdo->prepare($sqlInsert);
+
+    try {
+        $stmtInsert->execute([$idSeance, $idPoney, $idClient]);
+        $message = "<p style='color: green;'>Réservation effectuée avec succès !</p>";
+    } catch (PDOException $e) {
+        $message = "<p style='color: red;'>Erreur lors de la réservation : " . htmlspecialchars($e->getMessage()) . "</p>";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -7,9 +50,9 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Réservation de cours - Centre Équestre Grand Galop</title>
+    <title>Réservation - Centre Équestre Grand Galop</title>
     <style>
-        /* Style général */
+        /* Copier les styles généraux */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -19,7 +62,7 @@ session_start();
             box-sizing: border-box;
         }
 
-        /* Barre de navigation */
+        /* Navigation */
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
@@ -85,15 +128,6 @@ session_start();
             color: #004d40;
         }
 
-        .vide {
-            color: red;
-            font-weight: bold;
-        }
-
-        form {
-            margin-top: 10px;
-        }
-
         form label, form select, form button {
             display: block;
             margin: 10px 0;
@@ -117,18 +151,6 @@ session_start();
             background-color: #004d40;
         }
 
-        /* Message de confirmation */
-        .message {
-            color: green;
-            font-weight: bold;
-            margin-top: 20px;
-            background-color: #dff0d8;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #d0e9c6;
-            display: inline-block;
-        }
-
         /* Pied de page */
         footer {
             background-color: #00796b;
@@ -140,7 +162,6 @@ session_start();
     </style>
 </head>
 <body>
-
     <!-- Barre de navigation -->
     <div class="nav">
         <div class="left-links">
@@ -164,47 +185,47 @@ session_start();
 
     <!-- Section de réservation -->
     <div class="reservation-section">
-        <h1>Réservation de cours</h1>
+        <h1>Réservez une séance</h1>
+        <?= $message ?>
         <div class="poney-block">
-            <!-- Blocs de poneys disponibles -->
-            <?php
-            if (!empty($poneys)) {
-                foreach ($poneys as $poney) {
-                    echo '<div class="les_poneys">';
-                    echo '<img src="poney/' . htmlspecialchars($poney['imagePoney']) . '" alt="Poney">';
-                    echo '<h3>' . htmlspecialchars($poney['nomP']) . '</h3>';
+            <?php foreach ($poneys as $poney): ?>
+                <div class="les_poneys">
+                    <img src="poney/<?= htmlspecialchars($poney['imagePoney']) ?>" alt="Image de <?= htmlspecialchars($poney['nomP']) ?>">
+                    <h3><?= htmlspecialchars($poney['nomP']) ?></h3>
+                    <form method="POST">
+                        <input type="hidden" name="poney_id" value="<?= $poney['idPoney'] ?>">
+                        <label for="seance_<?= $poney['idPoney'] ?>">Choisissez une séance :</label>
+                        <select name="seance_id" id="seance_<?= $poney['idPoney'] ?>" required>
+                            <option value="" disabled selected>-- Choisissez --</option>
+                            <?php
+                            $sqlSeances = "SELECT idSeance, dateDebut, dateFin FROM SEANCE 
+                                           WHERE idSeance NOT IN (
+                                               SELECT idSeance FROM PARTICIPER WHERE idPoney = ?
+                                           )";
+                            $stmtSeances = $pdo->prepare($sqlSeances);
+                            $stmtSeances->execute([$poney['idPoney']]);
+                            $seances = $stmtSeances->fetchAll(PDO::FETCH_ASSOC);
 
-                    if (!empty($seancesDisponibles)) {
-                        echo '<form method="POST">';
-                        echo '<label>Sélectionnez une séance :</label>';
-                        echo '<select name="seance_id" required>';
-                        echo '<option value="">Choisir une séance</option>';
-                        foreach ($seancesDisponibles as $seance) {
-                            echo '<option value="' . $seance['idSeance'] . '">Du ' . date("d/m/Y H:i", strtotime($seance['dateDebut'])) . ' au ' . date("H:i", strtotime($seance['dateFin'])) . '</option>';
-                        }
-                        echo '</select>';
-                        echo '<button type="submit">Réserver</button>';
-                        echo '</form>';
-                    } else {
-                        echo '<p class="vide">Aucune séance disponible</p>';
-                    }
-
-                    echo '</div>';
-                }
-            } else {
-                echo '<p>Aucun poney disponible pour votre poids.</p>';
-            }
-            ?>
+                            foreach ($seances as $seance):
+                                ?>
+                                <option value="<?= $seance['idSeance'] ?>">
+                                    Le <?= date('d/m/Y', strtotime($seance['dateDebut'])) ?> 
+                                    de <?= date('H:i', strtotime($seance['dateDebut'])) ?>
+                                    à <?= date('H:i', strtotime($seance['dateFin'])) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit">Réserver</button>
+                    </form>
+                </div>
+            <?php endforeach; ?>
         </div>
-
-        <!-- Message de confirmation -->
-        <?php if (isset($message)) echo '<div class="message">' . $message . '</div>'; ?>
     </div>
 
     <!-- Pied de page -->
     <footer>
-        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php" style="color: #ffccbc;">Contactez-nous</a></p>
+        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
     </footer>
-
 </body>
 </html>
+

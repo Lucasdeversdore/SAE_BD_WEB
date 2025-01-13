@@ -1,5 +1,41 @@
 <?php
 session_start();
+require 'db.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+// Récupérer les réservations
+$sql = "
+    SELECT PONEY.nomP, SEANCE.dateDebut, SEANCE.dateFin, PARTICIPER.idPoney, PARTICIPER.idSeance
+    FROM PARTICIPER
+    INNER JOIN PONEY ON PARTICIPER.idPoney = PONEY.idPoney
+    INNER JOIN SEANCE ON PARTICIPER.idSeance = SEANCE.idSeance
+    WHERE PARTICIPER.idCl = ?
+    ORDER BY SEANCE.dateDebut ASC
+";
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$_SESSION['user_id']]);
+$reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Gérer la suppression
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_reservation'])) {
+    $idPoney = $_POST['idPoney'];
+    $idSeance = $_POST['idSeance'];
+
+    $sqlDelete = "DELETE FROM PARTICIPER WHERE idSeance = ? AND idPoney = ? AND idCl = ?";
+    $stmtDelete = $pdo->prepare($sqlDelete);
+
+    try {
+        $stmtDelete->execute([$idSeance, $idPoney, $_SESSION['user_id']]);
+        header("Location: mes_reservations.php");
+        exit;
+    } catch (PDOException $e) {
+        echo "<p style='color: red;'>Erreur lors de la suppression : " . htmlspecialchars($e->getMessage()) . "</p>";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -7,7 +43,7 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Réservations - Centre Équestre Grand Galop</title>
+    <title>Mes Réservations</title>
     <style>
         /* Style général */
         body {
@@ -17,9 +53,18 @@ session_start();
             background-color: #f4f7fc;
             color: #333;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        /* Barre de navigation */
+        /* Conteneur principal */
+        .container {
+            flex: 1;
+            padding: 20px;
+        }
+
+        /* Navigation */
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
@@ -46,7 +91,7 @@ session_start();
 
         /* Section des réservations */
         .reservations-section {
-            padding: 60px 40px;
+            padding: 20px;
             text-align: center;
         }
 
@@ -106,12 +151,11 @@ session_start();
             color: white;
             text-align: center;
             padding: 15px 0;
-            margin-top: 40px;
+            margin-top: auto;
         }
     </style>
 </head>
 <body>
-
     <!-- Barre de navigation -->
     <div class="nav">
         <div class="left-links">
@@ -133,36 +177,38 @@ session_start();
         </div>
     </div>
 
-    <!-- Section des réservations -->
-    <div class="reservations-section">
-        <h1>Mes Réservations</h1>
-
-        <?php if (empty($reservations)): ?>
-            <p>Aucune réservation trouvée.</p>
-        <?php else: ?>
-            <div class="liste-reservations">
-                <?php foreach ($reservations as $reservation): ?>
-                    <div class="reservation-card">
-                        <h3>Poney : <?= htmlspecialchars($reservation['nomP']) ?></h3>
-                        <p><strong>Date de début :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateDebut'])) ?></p>
-                        <p><strong>Date de fin :</strong> <?= date("H:i", strtotime($reservation['dateFin'])) ?></p>
-
-                        <!-- Formulaire pour supprimer une réservation -->
-                        <form method="POST" action="mes_reservations.php">
-                            <input type="hidden" name="delete_id_poney" value="<?= $reservation['idPoney'] ?>">
-                            <input type="hidden" name="delete_id_seance" value="<?= $reservation['idSeance'] ?>">
-                            <button type="submit" name="delete_reservation">Supprimer</button>
-                        </form>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+    <!-- Conteneur principal -->
+    <div class="container">
+        <div class="reservations-section">
+            <h1>Mes Réservations</h1>
+            <?php if (empty($reservations)): ?>
+                <p>Aucune réservation trouvée.</p>
+            <?php else: ?>
+                <div class="liste-reservations">
+                    <?php foreach ($reservations as $reservation): ?>
+                        <div class="reservation-card">
+                            <h3>Poney : <?= htmlspecialchars($reservation['nomP']) ?></h3>
+                            <p><strong>Date :</strong> 
+                                Le <?= date('d/m/Y', strtotime($reservation['dateDebut'])) ?> 
+                                de <?= date('H:i', strtotime($reservation['dateDebut'])) ?>
+                                à <?= date('H:i', strtotime($reservation['dateFin'])) ?>
+                            </p>
+                            <form method="POST">
+                                <input type="hidden" name="idPoney" value="<?= $reservation['idPoney'] ?>">
+                                <input type="hidden" name="idSeance" value="<?= $reservation['idSeance'] ?>">
+                                <button type="submit" name="delete_reservation">Annuler</button>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
 
     <!-- Pied de page -->
     <footer>
-        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php" style="color: #ffccbc;">Contactez-nous</a></p>
+        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
     </footer>
-
 </body>
 </html>
+
