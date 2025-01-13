@@ -2,14 +2,10 @@
 require 'db.php';
 session_start();
 
-// Récupération de l'offset de semaine depuis la requête GET
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-
-// Calcul des dates de début et fin pour la requête SQL
 $dateDebut = date('Y-m-d', strtotime("now +$offset week"));
 $dateFin = date('Y-m-d', strtotime("now +$offset week +6 days"));
 
-// Requête pour récupérer les séances et informations supplémentaires
 $query = "
     SELECT 
         (strftime('%w', S.dateDebut) + 6) % 7 AS jour,
@@ -28,11 +24,9 @@ $stmt = $pdo->prepare($query);
 $stmt->execute(['dateDebut' => $dateDebut, 'dateFin' => $dateFin]);
 $seances = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Créneaux horaires et jours de la semaine
 $heures = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
 $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-// Suivi des créneaux déjà occupés
 $occupes = [];
 ?>
 
@@ -43,7 +37,6 @@ $occupes = [];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendrier des cours - Centre Équestre Grand Galop</title>
     <style>
-        /* Style général */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -53,7 +46,6 @@ $occupes = [];
             box-sizing: border-box;
         }
 
-        /* Barre de navigation */
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
@@ -78,7 +70,6 @@ $occupes = [];
             opacity: 0.8;
         }
 
-        /* Tableau des créneaux */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -116,7 +107,6 @@ $occupes = [];
             border: none;
         }
 
-        /* Boutons de navigation */
         .week-nav {
             display: flex;
             justify-content: center;
@@ -144,7 +134,6 @@ $occupes = [];
             background-color: #004d40;
         }
 
-        /* Pied de page */
         footer {
             background-color: #00796b;
             color: white;
@@ -163,8 +152,6 @@ $occupes = [];
     </style>
 </head>
 <body>
-
-    <!-- Barre de navigation -->
     <div class="nav">
         <div class="left-links">
             <a href="index.php">Accueil</a>
@@ -182,26 +169,20 @@ $occupes = [];
                 <a href="login.php">Connexion</a>
                 <a href="register.php">Inscription</a>
             <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Section calendrier -->
+        </div> 
+    </div> 
     <h1 style="text-align: center; color: #00796b; margin-top: 40px;">Calendrier des Cours de Poney</h1>
     <h2 style="text-align: center; color: #555;">Semaine du <?php echo date('d/m/Y', strtotime($dateDebut)); ?> au <?php echo date('d/m/Y', strtotime($dateFin)); ?></h2>
-
-    <!-- Boutons de navigation -->
     <div class="week-nav">
-        <a href="calendar.php?offset=<?php echo $offset - 1; ?>">
-            <button <?php if ($offset <= 0) echo 'disabled'; ?>>Semaine précédente</button>
-        </a>
-        <a href="calendar.php?offset=<?php echo $offset + 1; ?>">
-            <button>Semaine suivante</button>
-        </a>
+        <a href="calendar.php?offset=<?php echo $offset - 1; ?>"> 
+            <button <?php if ($offset <= 0) echo 'disabled'; ?>>Semaine précédente</button> 
+        </a> 
+        <a href="calendar.php?offset=<?php echo $offset + 1; ?>"> 
+            <button>Semaine suivante</button>  
+        </a> 
     </div>
-
-    <!-- Tableau des créneaux -->
-    <div style="overflow-x: auto; padding: 0 20px;">
-        <table border="1" cellpadding="10" cellspacing="0">
+    <div style="overflow-x: auto; padding: 0 20px;">   
+        <table border="1" cellpadding="10" cellspacing="0"> 
             <tr>
                 <th>Heure</th>
                 <?php foreach ($jours as $jour): ?>
@@ -209,14 +190,13 @@ $occupes = [];
                 <?php endforeach; ?>
             </tr>
 
-            <?php foreach ($heures as $heure): ?>
+            <?php foreach ($heures as $heure): ?> 
                 <tr>
-                    <td><?php echo $heure; ?></td>
-                    <?php foreach ($jours as $jour): ?>
-                        <?php
-                        // Vérifier si ce créneau est déjà occupé
-                        if (isset($occupes["$jour-$heure"])) {
-                            continue;
+                    <td><?php echo $heure; ?></td> 
+                    <?php foreach ($jours as $jour): ?> 
+                        <?php 
+                        if (isset($occupes["$jour-$heure"])) { 
+                            continue; 
                         }
 
                         $reservationTrouvee = false;
@@ -254,8 +234,6 @@ $occupes = [];
             <?php endforeach; ?>
         </table>
     </div>
-
-    <!-- Pied de page -->
     <footer>
         <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
     </footer>

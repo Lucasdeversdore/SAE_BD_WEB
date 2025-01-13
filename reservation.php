@@ -7,20 +7,17 @@ if (!isset($_SESSION['user_id'])) {
 
 require 'db.php';
 
-// Poids des clients
 $sqlClient = "SELECT poids FROM PERSONNE WHERE idPersonne = ?";
 $stmtClient = $pdo->prepare($sqlClient);
 $stmtClient->execute([$_SESSION['user_id']]);
 $client = $stmtClient->fetch(PDO::FETCH_ASSOC);
 $poidsClient = $client['poids'];
 
-// Vérification des poneys supportant le poids
 $sql = "SELECT idPoney, nomP, poidsMax, imagePoney FROM PONEY WHERE poidsMax >= ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$poidsClient]);
 $poneys = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Quand on appuie sur réserver
 $message = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idPoney = $_POST['poney_id'];
@@ -34,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message = "Réservation réussie !";
 }
 
-// Récupérer les créneaux déjà réservés par l'utilisateur
 $sqlReservations = "
     SELECT S.dateDebut, S.dateFin
     FROM SEANCE S
@@ -53,19 +49,18 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réservation - Centre Équestre</title>
     <style>
-        /* Style général */
         html, body {
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7fc;
             color: #333;
-            height: 100%; /* Pour permettre le sticky footer */
+            height: 100%;
         }
 
         body {
             display: flex;
-            flex-direction: column; /* Flexbox pour aligner les sections */
+            flex-direction: column;
             min-height: 100vh;
         }
 
@@ -91,7 +86,6 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             opacity: 0.8;
         }
 
-        /* Message de réussite */
         .message {
             background-color: #dff0d8;
             color: #3c763d;
@@ -103,11 +97,10 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             border: 1px solid #d0e9c6;
         }
 
-        /* Section principale */
         .block {
             padding: 40px 20px;
             text-align: center;
-            flex: 1; /* Permet d'occuper tout l'espace disponible */
+            flex: 1;
         }
 
         .poney-block {
@@ -170,13 +163,12 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             color: red;
         }
 
-        /* Pied de page */
         footer {
             background-color: #00796b;
             color: white;
             text-align: center;
             padding: 15px 0;
-            margin-top: auto; /* Force le footer à rester en bas */
+            margin-top: auto;
         }
     </style>
 </head>
@@ -212,7 +204,6 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
                     <img src="<?= 'poney/' . htmlspecialchars($poney['imagePoney']) ?>" alt="Image de <?= htmlspecialchars($poney['nomP']) ?>">
                     <h3><?= htmlspecialchars($poney['nomP']) ?></h3>
                     <?php
-                    // Récupérer les séances disponibles pour ce poney
                     $sqlSeances = "
                         SELECT S.idSeance, S.dateDebut, S.dateFin
                         FROM SEANCE S

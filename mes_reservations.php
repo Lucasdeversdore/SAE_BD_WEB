@@ -19,15 +19,14 @@ if (isset($_POST['delete_reservation'])) {
     exit;
 }
 
-// Obtenir les réservations
+
 $sqlReservations = "
     SELECT P.nomP, S.dateDebut, S.dateFin, PR.idPoney, PR.idSeance
     FROM PARTICIPER PR
     JOIN PONEY P ON PR.idPoney = P.idPoney
     JOIN SEANCE S ON PR.idSeance = S.idSeance
     WHERE PR.idCl = ?
-    ORDER BY S.dateDebut
-";
+    ORDER BY S.dateDebut";
 $stmtReservations = $pdo->prepare($sqlReservations);
 $stmtReservations->execute([$_SESSION['user_id']]);
 $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
@@ -41,23 +40,23 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes Réservations</title>
     <style>
-        /* Style général */
+
         html, body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f4f7fc;
             color: #333;
-            height: 100%; /* Assure que la page prend toute la hauteur */
+            height: 100%;
         }
 
         body {
             display: flex;
-            flex-direction: column; /* Flexbox pour aligner les sections */
+            flex-direction: column;
             min-height: 100vh;
         }
 
-        /* Navigation */
+
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
@@ -79,11 +78,11 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             opacity: 0.8;
         }
 
-        /* Section principale */
+
         .les_reserv {
             padding: 40px 20px;
             text-align: center;
-            flex: 1; /* Permet d'occuper tout l'espace disponible */
+            flex: 1;
         }
 
         .liste_reserv {
@@ -127,18 +126,18 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             background-color: #c62828;
         }
 
-        /* Pied de page */
+
         footer {
             background-color: #00796b;
             color: white;
             text-align: center;
             padding: 15px 0;
-            margin-top: auto; /* Force le footer à rester en bas */
+            margin-top: auto;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+
     <div class="nav">
         <div>
             <a href="index.php">Accueil</a>
@@ -156,7 +155,6 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 
-    <!-- Section principale -->
     <div class="les_reserv">
         <h1>Mes Réservations</h1>
         <?php if (empty($reservations)): ?>
@@ -169,7 +167,6 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
                         <p><strong>Date de début :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateDebut'])) ?></p>
                         <p><strong>Date de fin :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateFin'])) ?></p>
 
-                        <!-- Supprimer réservation -->
                         <form method="POST" action="mes_reservations.php">
                             <input type="hidden" name="delete_id_poney" value="<?= $reservation['idPoney'] ?>">
                             <input type="hidden" name="delete_id_seance" value="<?= $reservation['idSeance'] ?>">
@@ -180,8 +177,7 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             </div>
         <?php endif; ?>
     </div>
-
-    <!-- Pied de page -->
+    
     <footer>
         <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
     </footer>

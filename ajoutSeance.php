@@ -10,13 +10,11 @@ if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
 $message_cours = "";
 $message_seance = "";
 
-// Traitement du formulaire pour ajouter un cours
 if (isset($_POST['ajouter_cours'])) {
     $id_cours = $_POST['id_cours'];
     $type_cours = htmlspecialchars(trim($_POST['type_cours']));
 
     try {
-        // Vérifier si le cours existe déjà (par ID)
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM COURS WHERE idCours = :id_cours");
         $stmt->execute([':id_cours' => $id_cours]);
         $coursExist = $stmt->fetchColumn();
@@ -24,7 +22,6 @@ if (isset($_POST['ajouter_cours'])) {
         if ($coursExist > 0) {
             $message_cours = "Ce cours existe déjà.";
         } else {
-            // Insertion du nouveau cours
             $stmt = $pdo->prepare("INSERT INTO COURS (idCours, typeCours) VALUES (:id_cours, :type_cours)");
             $stmt->execute([
                 ':id_cours' => $id_cours,
@@ -38,19 +35,17 @@ if (isset($_POST['ajouter_cours'])) {
     }
 }
 
-// Traitement du formulaire pour ajouter une séance
 if (isset($_POST['ajouter_seance'])) {
     $id_cours = $_POST['id_cours'];
     $date_debut = $_POST['date_debut'];
     $date_fin = $_POST['date_fin'];
     $duree = $_POST['duree'];
-    $particulier = isset($_POST['particulier']) ? 1 : 0;  // Si coche, valeur 1
+    $particulier = isset($_POST['particulier']) ? 1 : 0;
     $nb_personne_max = $_POST['nb_personne_max'];
     $niveau = htmlspecialchars(trim($_POST['niveau']));
     $id_moniteur = $_POST['id_moniteur'];
 
     try {
-        // Insertion de la séance
         $stmt = $pdo->prepare("INSERT INTO SEANCE (idCours, dateDebut, dateFin, duree, particulier, nbPersonneMax, niveau, idMoniteur) 
                                VALUES (:id_cours, :date_debut, :date_fin, :duree, :particulier, :nb_personne_max, :niveau, :id_moniteur)");
         $stmt->execute([
@@ -204,7 +199,6 @@ if (isset($_POST['ajouter_seance'])) {
     <div class="container">
         <h1>Ajouter un Cours et une Séance</h1>
 
-        <!-- Affichage des messages de succès ou d'erreur -->
         <?php if ($message_cours): ?>
             <div class="message <?php echo strpos($message_cours, 'Erreur') === false ? 'success' : 'error'; ?>">
                 <?php echo htmlspecialchars($message_cours); ?>
@@ -217,7 +211,6 @@ if (isset($_POST['ajouter_seance'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Formulaire pour ajouter un cours -->
         <form action="ajoutSeance.php" method="POST" class="form">
             <h2>Ajouter un Cours</h2>
 
@@ -238,7 +231,6 @@ if (isset($_POST['ajouter_seance'])) {
             <label for="id_cours">Sélectionner le Cours :</label>
             <select id="id_cours" name="id_cours" required>
                 <?php
-                // Récupérer les cours existants pour le menu déroulant
                 $query_cours = "SELECT idCours, typeCours FROM COURS";
                 $result_cours = $pdo->query($query_cours);
                 while ($row = $result_cours->fetch(PDO::FETCH_ASSOC)) {
@@ -272,7 +264,6 @@ if (isset($_POST['ajouter_seance'])) {
             <label for="id_moniteur">Sélectionner le Moniteur :</label>
             <select id="id_moniteur" name="id_moniteur" required>
             <?php
-                // Requête pour récupérer les prénoms et noms des moniteurs avec leur id
                 $query_moniteur = "
                 SELECT m.idMoniteur, p.prenom, p.nom
                 FROM MONITEUR m
@@ -280,9 +271,7 @@ if (isset($_POST['ajouter_seance'])) {
                 ";
                 $stmt_moniteur = $pdo->query($query_moniteur);
                             
-                // Boucle pour afficher les moniteurs dans le menu déroulant
                 while ($row = $stmt_moniteur->fetch(PDO::FETCH_ASSOC)) {
-                // Concaténation du prénom et du nom pour l'affichage dans le menu
                 $moniteurFullName = $row['prenom'] . ' ' . $row['nom'];
                 echo "<option value='" . $row['idMoniteur'] . "'>" . htmlspecialchars($moniteurFullName) . "</option>";
         }

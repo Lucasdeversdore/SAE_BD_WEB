@@ -12,17 +12,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $personne = $stmt->fetch();
 
     if ($personne && password_verify($mdp, $personne['mdp'])) {
-        // Stockage des informations dans la session
+
         $_SESSION['user_id'] = $personne['idPersonne'];
         $_SESSION['prenom'] = $personne['prenom'];
         $_SESSION['nom'] = $personne['nom'];
         $_SESSION['est_admin'] = $personne['est_admin'];
 
-        // Redirection en fonction du statut d'administrateur
         if ($personne['est_admin']) {
-            header("Location: page_admin.php"); // Page spéciale admin
+            header("Location: page_admin.php");
         } else {
-            header("Location: index.php"); // Page normale
+            header("Location: index.php");
         }
         exit;
     } else {
@@ -48,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            box-sizing: border-box; /* Assure que padding et border sont inclus dans la largeur totale */
+            box-sizing: border-box;
         }
 
         .nav {
@@ -94,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             width: 100%;
             max-width: 400px;
             text-align: center;
-            margin-top: 100px; /* Espace sous la navbar */
+            margin-top: 100px;
         }
 
         h2 {
@@ -174,8 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="register.php">Inscription</a>
         </div>
     </div>
-
-    <!-- Formulaire de connexion -->
     <div class="container">
         <h2>Formulaire de connexion</h2>
         <form method="POST">

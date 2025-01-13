@@ -1,5 +1,5 @@
 <?php
-// Connexion à la base de données creaPon.db avec PDO
+// Connexion à la base de données bd.db avec PDO
 try {
     $pdo = new PDO('sqlite:bd.db');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

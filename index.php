@@ -1,11 +1,11 @@
 <?php
 session_start();
 
-// Vérification si l'utilisateur est connecté et a un rôle d'admin
 if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
-    header("Location: page_admin.php"); // Redirection vers la page d'administration
-    exit(); // Assurez-vous que le script s'arrête après la redirection
+    header("Location: page_admin.php");
+    exit();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -15,7 +15,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centre Équestre Orléans</title>
     <style>
-        /* Style général */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -25,7 +24,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             box-sizing: border-box;
         }
 
-        /* Barre de navigation */
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
@@ -50,7 +48,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             opacity: 0.8;
         }
 
-        /* Section Hero */
         .hero {
             display: flex;
             align-items: center;
@@ -97,7 +94,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
-        /* Section Présentation */
         .presentation {
             padding: 60px 40px;
             text-align: center;
@@ -142,7 +138,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             color: #555;
         }
 
-        /* Section Témoignages */
         .testimonials {
             padding: 60px 40px;
             background-color: #f9fbe7;
@@ -169,7 +164,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
-        /* Pied de page */
         footer {
             background-color: #00796b;
             color: white;
@@ -179,7 +173,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
     </style>
 </head>
 <body>
-    <!-- Barre de navigation -->
     <div class="nav">
         <div class="left-links">
             <a href="index.php">Accueil</a>
@@ -199,8 +192,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             <?php endif; ?>
         </div>
     </div>
-
-    <!-- Section Hero -->
     <section class="hero">
         <div class="hero-content">
             <h1>Bienvenue au Poney Club Grand Galop</h1>
@@ -214,8 +205,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             <img src="img/poney.png" alt="Enfant avec un poney">
         </div>
     </section>
-
-    <!-- Section Présentation -->
     <section class="presentation">
         <h2>Le Poney Club Grand Galop</h2>
         <p>
