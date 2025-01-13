@@ -14,13 +14,14 @@ $stmtClient->execute([$_SESSION['user_id']]);
 $client = $stmtClient->fetch(PDO::FETCH_ASSOC);
 $poidsClient = $client['poids'];
 
-// Verif des poids sur^pportés par le ponney
+// Vérification des poneys supportant le poids
 $sql = "SELECT idPoney, nomP, poidsMax, imagePoney FROM PONEY WHERE poidsMax >= ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$poidsClient]);
 $poneys = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Quand on appuie sur réserver
+$message = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idPoney = $_POST['poney_id'];
     $idSeance = $_POST['seance_id'];
@@ -29,8 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sql = "INSERT INTO PARTICIPER (idSeance, idPoney, idCl) VALUES (?, ?, ?)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$idSeance, $idPoney, $idClient]);
-    $message = "<p style='color: green;'>Réservation effectuée avec succès !</p>";
+
+    $message = "Réservation réussie !";
 }
+
+// Récupérer les créneaux déjà réservés par l'utilisateur
+$sqlReservations = "
+    SELECT S.dateDebut, S.dateFin
+    FROM SEANCE S
+    INNER JOIN PARTICIPER P ON S.idSeance = P.idSeance
+    WHERE P.idCl = ?
+";
+$stmtReservations = $pdo->prepare($sqlReservations);
+$stmtReservations->execute([$_SESSION['user_id']]);
+$reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -38,79 +51,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Réservation</title>
+    <title>Réservation - Centre Équestre</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* Style général */
+        html, body {
             margin: 0;
             padding: 0;
-            background-color: #e8f5e9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fc;
+            color: #333;
+            height: 100%; /* Pour permettre le sticky footer */
         }
 
+        body {
+            display: flex;
+            flex-direction: column; /* Flexbox pour aligner les sections */
+            min-height: 100vh;
+        }
+
+        /* Navigation */
         .nav {
-            background-color: #2e7d32;
-            padding: 10px 20px;
+            background-color: #00796b;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .nav a {
             color: white;
             text-decoration: none;
-            margin: 0 10px;
-            font-weight: bold;
+            margin: 0 15px;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
         }
 
         .nav a:hover {
-            text-decoration: underline;
+            opacity: 0.8;
         }
 
-        .block {
-            padding: 20px;
+        /* Message de réussite */
+        .message {
+            background-color: #dff0d8;
+            color: #3c763d;
+            padding: 15px;
             text-align: center;
-            margin-top: 100px;
-        }
-
-        form {
-            display: inline-block;
-            padding: 20px;
-            background-color: #d7e9dc;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        form label, select, button {
-            display: block;
-            margin-bottom: 15px;
-            width: 100%;
-        }
-
-        select, button {
-            padding: 10px;
-            border: 1px solid #ccc;
             border-radius: 5px;
-        }
-
-        button {
-            background-color: #2e7d32;
-            color: white;
+            margin: 15px 20px 0;
             font-weight: bold;
-            cursor: pointer;
+            border: 1px solid #d0e9c6;
         }
 
-        button:hover {
-            background-color: #1b5e20;
-        }
-
-        .user-info {
-            color: white;
-            font-weight: bold;
+        /* Section principale */
+        .block {
+            padding: 40px 20px;
+            text-align: center;
+            flex: 1; /* Permet d'occuper tout l'espace disponible */
         }
 
         .poney-block {
@@ -123,8 +120,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .les_poneys {
             border: 1px solid #ccc;
             padding: 10px;
-            width: 200px;
-            text-align: center;
+            width: 250px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
         }
 
         .les_poneys img {
@@ -136,28 +135,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .les_poneys h3 {
             margin-top: 10px;
+            color: #004d40;
+        }
+
+        .les_poneys form {
+            margin-top: 10px;
+        }
+
+        form label, select, button {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        select, button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #00796b;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #004d40;
         }
 
         .vide {
             color: red;
         }
 
-        .message { 
-            color: green;
-            font-weight: bold;
+        /* Pied de page */
+        footer {
+            background-color: #00796b;
+            color: white;
             text-align: center;
-            margin-top: 20px;
-            background-color: #dff0d8; 
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #d0e9c6;
+            padding: 15px 0;
+            margin-top: auto; /* Force le footer à rester en bas */
         }
-
-        
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="nav">
         <div>
             <a href="index.php">Accueil</a>
@@ -168,81 +191,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <span class="user-info">
-                    <?= htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
+                    <?= 'Bonjour, ' . htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
                 </span>
                 <a href="logout.php">Déconnexion</a>
             <?php endif; ?>
         </div>
     </div>
-    
-    <div class="block">
-        <h1>Réservation de cours</h1>
-        <div class="poney-block">
-            <?php
-            // Verif si le clien est déja inscrit à une séance
-            $sqlClientSeances = "
-                SELECT idSeance
-                FROM PARTICIPER
-                WHERE idCl = ?
-            ";
-            $stmtClientSeances = $pdo->prepare($sqlClientSeances);
-            $stmtClientSeances->execute([$_SESSION['user_id']]);
-            $clientSeances = $stmtClientSeances->fetchAll(PDO::FETCH_ASSOC);
-            $clientSeancesIds = array_column($clientSeances, 'idSeance');
 
-            foreach ($poneys as $poney) {
-                $cheminImage = 'poney/' . $poney['imagePoney'];
-
-                echo '<div class="les_poneys">';
-                echo '<img src="' . htmlspecialchars($cheminImage) . '" alt="Image de ' . htmlspecialchars($poney['nomP']) . '">';
-                echo '<h3>' . htmlspecialchars($poney['nomP']) . '</h3>';
-
-                // Check des poneys avec les consignes (Le implode permet de séparer chaque valeur par le caractere entre "")
-                $sqlSeances = "
-                    SELECT S.idSeance, S.dateDebut, S.dateFin
-                    FROM SEANCE S
-                    WHERE S.idSeance NOT IN (
-                        SELECT P.idSeance
-                        FROM PARTICIPER P
-                        WHERE P.idPoney = ?
-                    ) AND S.idSeance NOT IN (" . implode(",", $clientSeancesIds) . ") 
-                    ORDER BY S.dateDebut ASC
-                ";
-                $stmtSeances = $pdo->prepare($sqlSeances);
-                $stmtSeances->execute([$poney['idPoney']]);
-                $seancesDisponibles = $stmtSeances->fetchAll(PDO::FETCH_ASSOC);
-
-                // Verif séance et accès des données pour le post
-                if (!empty($seancesDisponibles)) {
-                    echo '<form method="POST" action="reservation.php">';
-                    echo '<input type="hidden" name="poney_id" value="' . $poney['idPoney'] . '">';
-                    echo '<input type="hidden" name="user_id" value="' . $_SESSION['user_id'] . '">';
-                    echo '<label for="seance_' . $poney['idPoney'] . '">Sélectionnez une séance :</label>';
-                    echo '<select name="seance_id" id="seance_' . $poney['idPoney'] . '" required>';
-                    echo '<option value="" disabled selected>Choisir une séance</option>';
-                    foreach ($seancesDisponibles as $seance) {
-                        $dateDebut = date("d/m/Y H:i", strtotime($seance['dateDebut']));
-                        $dateFin = date("H:i", strtotime($seance['dateFin']));
-                        echo '<option value="' . $seance['idSeance'] . '">Du ' . $dateDebut . ' au ' . $dateFin . '</option>';
-                    }
-                    echo '</select>';
-                    echo '<button type="submit">Réserver</button>';
-                    echo '</form>';
-                } else {
-                    echo '<p class="vide">Aucune séance disponible</p>';
-                }
-
-                echo '</div>';
-            }
-            ?>
-        </div>
-        
-        <!-- Message de confirmation -->
+    <?php if ($message): ?>
         <div class="message">
-            <?php if (isset($message)) {
-                echo $message;
-            } ?>
+            <?= htmlspecialchars($message) ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="block">
+        <h1>Réservez une séance</h1>
+        <div class="poney-block">
+            <?php foreach ($poneys as $poney): ?>
+                <div class="les_poneys">
+                    <img src="<?= 'poney/' . htmlspecialchars($poney['imagePoney']) ?>" alt="Image de <?= htmlspecialchars($poney['nomP']) ?>">
+                    <h3><?= htmlspecialchars($poney['nomP']) ?></h3>
+                    <?php
+                    // Récupérer les séances disponibles pour ce poney
+                    $sqlSeances = "
+                        SELECT S.idSeance, S.dateDebut, S.dateFin
+                        FROM SEANCE S
+                        WHERE S.idSeance NOT IN (
+                            SELECT P.idSeance
+                            FROM PARTICIPER P
+                            WHERE P.idPoney = ?
+                        ) 
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM PARTICIPER P
+                            JOIN SEANCE S2 ON P.idSeance = S2.idSeance
+                            WHERE P.idCl = ?
+                            AND (
+                                (S.dateDebut < S2.dateFin AND S.dateFin > S2.dateDebut)
+                            )
+                        )
+                        ORDER BY S.dateDebut ASC
+                    ";
+                    $stmtSeances = $pdo->prepare($sqlSeances);
+                    $stmtSeances->execute([$poney['idPoney'], $_SESSION['user_id']]);
+                    $seancesDisponibles = $stmtSeances->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (!empty($seancesDisponibles)): ?>
+                        <form method="POST" action="reservation.php">
+                            <input type="hidden" name="poney_id" value="<?= $poney['idPoney'] ?>">
+                            <input type="hidden" name="user_id" value="<?= $_SESSION['user_id'] ?>">
+                            <label for="seance_<?= $poney['idPoney'] ?>">Sélectionnez une séance :</label>
+                            <select name="seance_id" id="seance_<?= $poney['idPoney'] ?>" required>
+                                <?php foreach ($seancesDisponibles as $seance): ?>
+                                    <option value="<?= $seance['idSeance'] ?>">
+                                        <?= 'Le ' . date("d/m/Y", strtotime($seance['dateDebut'])) . ' de ' . date("H:i", strtotime($seance['dateDebut'])) . ' à ' . date("H:i", strtotime($seance['dateFin'])) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit">Réserver</button>
+                        </form>
+                    <?php else: ?>
+                        <p class="vide">Aucune séance disponible</p>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
+
+    <footer>
+        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
+    </footer>
 </body>
 </html>
