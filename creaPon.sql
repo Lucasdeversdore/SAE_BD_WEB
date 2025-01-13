@@ -65,7 +65,8 @@ CREATE TABLE PERSONNE (
   numTel     INTEGER UNIQUE,
   email      TEXT UNIQUE,
   poids      REAL,
-  mdp        TEXT
+  mdp        TEXT,
+  est_admin BOOLEAN
 );
 
 CREATE TABLE PONEY (
