@@ -15,11 +15,11 @@ if (isset($_POST['delete_reservation'])) {
     $stmtDelete->execute([$idPoney, $idSeance, $_SESSION['user_id']]);
 
     echo "<p style='color: green;'>Réservation supprimée avec succès !</p>";
-    header("Location: mes_reservations.php"); // Evitrer derenvoyer le form
+    header("Location: mes_reservations.php");
     exit;
 }
 
-// Le sréservations
+// Obtenir les réservations
 $sqlReservations = "
     SELECT P.nomP, S.dateDebut, S.dateFin, PR.idPoney, PR.idSeance
     FROM PARTICIPER PR
@@ -41,41 +41,49 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes Réservations</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* Style général */
+        html, body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #e8f5e9;
+            background-color: #f4f7fc;
+            color: #333;
+            height: 100%; /* Assure que la page prend toute la hauteur */
         }
 
+        body {
+            display: flex;
+            flex-direction: column; /* Flexbox pour aligner les sections */
+            min-height: 100vh;
+        }
+
+        /* Navigation */
         .nav {
-            background-color: #2e7d32;
-            padding: 10px 20px;
+            background-color: #00796b;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .nav a {
             color: white;
             text-decoration: none;
-            margin: 0 10px;
-            font-weight: bold;
+            margin: 0 15px;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
         }
 
         .nav a:hover {
-            text-decoration: underline;
+            opacity: 0.8;
         }
 
+        /* Section principale */
         .les_reserv {
-            padding: 20px;
+            padding: 40px 20px;
             text-align: center;
-            margin-top: 100px;
+            flex: 1; /* Permet d'occuper tout l'espace disponible */
         }
 
         .liste_reserv {
@@ -84,24 +92,24 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
 
         .une_reserv {
             background-color: #d7e9dc;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .une_reserv h3 {
+            font-size: 20px;
+            color: #004d40;
             margin: 0;
-            font-size: 18px;
         }
 
         .une_reserv p {
-            margin: 5px 0;
-        }
-
-        .user-info {
-            color: white;
-            font-weight: bold;
+            margin: 8px 0;
         }
 
         button {
@@ -110,16 +118,27 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             font-weight: bold;
             cursor: pointer;
             border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
         }
 
         button:hover {
             background-color: #c62828;
         }
+
+        /* Pied de page */
+        footer {
+            background-color: #00796b;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto; /* Force le footer à rester en bas */
+        }
     </style>
 </head>
 <body>
+    <!-- Navigation -->
     <div class="nav">
         <div>
             <a href="index.php">Accueil</a>
@@ -130,13 +149,14 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
         <div>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <span class="user-info">
-                    <?= htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
+                    Bonjour, <?= htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
                 </span>
                 <a href="logout.php">Déconnexion</a>
             <?php endif; ?>
         </div>
     </div>
 
+    <!-- Section principale -->
     <div class="les_reserv">
         <h1>Mes Réservations</h1>
         <?php if (empty($reservations)): ?>
@@ -147,9 +167,9 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
                     <div class="une_reserv">
                         <h3>Poney : <?= htmlspecialchars($reservation['nomP']) ?></h3>
                         <p><strong>Date de début :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateDebut'])) ?></p>
-                        <p><strong>Date de fin :</strong> <?= date("H:i", strtotime($reservation['dateFin'])) ?></p>
+                        <p><strong>Date de fin :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateFin'])) ?></p>
 
-                        <!-- Suppr reservation -->
+                        <!-- Supprimer réservation -->
                         <form method="POST" action="mes_reservations.php">
                             <input type="hidden" name="delete_id_poney" value="<?= $reservation['idPoney'] ?>">
                             <input type="hidden" name="delete_id_seance" value="<?= $reservation['idSeance'] ?>">
@@ -160,5 +180,10 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             </div>
         <?php endif; ?>
     </div>
+
+    <!-- Pied de page -->
+    <footer>
+        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
+    </footer>
 </body>
 </html>

@@ -9,22 +9,31 @@ $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 $dateDebut = date('Y-m-d', strtotime("now +$offset week"));
 $dateFin = date('Y-m-d', strtotime("now +$offset week +6 days"));
 
-// Requête pour récupérer les séances de la semaine sélectionnée
-$query = "SELECT strftime('%w', dateDebut) AS jour, 
-                 strftime('%H:%M', dateDebut) AS heure, 
-                 duree 
-          FROM SEANCE 
-          WHERE dateDebut >= :dateDebut 
-            AND dateDebut <= :dateFin
-          ORDER BY dateDebut";
-
+// Requête pour récupérer les séances et informations supplémentaires
+$query = "
+    SELECT 
+        (strftime('%w', S.dateDebut) + 6) % 7 AS jour,
+        strftime('%H:%M', S.dateDebut) AS heure,
+        S.duree,
+        S.nbPersonneMax,
+        (SELECT COUNT(*) FROM ASSISTER A WHERE A.idSeance = S.idSeance) AS nbParticipants,
+        P.prenom || ' ' || P.nom AS moniteur,
+        SUBSTR(P.prenom, 1, 1) || '.' || P.nom AS moniteurAbrege
+    FROM SEANCE S
+    JOIN MONITEUR M ON S.idMoniteur = M.idMoniteur
+    JOIN PERSONNE P ON M.idPersonne = P.idPersonne
+    WHERE S.dateDebut >= :dateDebut AND S.dateDebut <= :dateFin
+    ORDER BY S.dateDebut";
 $stmt = $pdo->prepare($query);
 $stmt->execute(['dateDebut' => $dateDebut, 'dateFin' => $dateFin]);
 $seances = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Créneaux horaires et jours de la semaine
 $heures = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
-$jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+$jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+// Suivi des créneaux déjà occupés
+$occupes = [];
 ?>
 
 <!DOCTYPE html>
@@ -142,6 +151,15 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
             text-align: center;
             padding: 15px 0;
         }
+
+        .user-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: url('img/user.png') no-repeat center center;
+            background-size: contain;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -152,6 +170,7 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
             <a href="index.php">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
+            <a href="mes_reservations.php">Mes Réservations</a>
         </div>
         <div class="right-links">
             <?php if (isset($_SESSION['user_id'])): ?>
@@ -172,12 +191,9 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
 
     <!-- Boutons de navigation -->
     <div class="week-nav">
-        <!-- Bouton Semaine Précédente (désactivé si offset <= 0) -->
         <a href="calendar.php?offset=<?php echo $offset - 1; ?>">
             <button <?php if ($offset <= 0) echo 'disabled'; ?>>Semaine précédente</button>
         </a>
-
-        <!-- Bouton Semaine Suivante -->
         <a href="calendar.php?offset=<?php echo $offset + 1; ?>">
             <button>Semaine suivante</button>
         </a>
@@ -193,27 +209,13 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
                 <?php endforeach; ?>
             </tr>
 
-            <?php
-            // Tableau pour suivre les heures occupées
-            $heuresOccupees = [];
-
-            foreach ($heures as $index => $heure):
-                if ($heure === '14:00' && !in_array('13:00', $heures)): ?>
-                    <!-- Ligne spéciale pour la pause de 13h à 14h -->
-                    <tr>
-                        <td>13:00</td>
-                        <?php foreach ($jours as $jour): ?>
-                            <td class="pause"></td>
-                        <?php endforeach; ?>
-                    </tr>
-                <?php endif; ?>
-
+            <?php foreach ($heures as $heure): ?>
                 <tr>
                     <td><?php echo $heure; ?></td>
                     <?php foreach ($jours as $jour): ?>
                         <?php
-                        // Vérifier si cette heure est déjà occupée
-                        if (isset($heuresOccupees["$jour-$heure"])) {
+                        // Vérifier si ce créneau est déjà occupé
+                        if (isset($occupes["$jour-$heure"])) {
                             continue;
                         }
 
@@ -222,15 +224,21 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
                         foreach ($seances as $seance) {
                             $duree = (int)$seance['duree'];
                             $heureDebut = $seance['heure'];
+                            $nbPersonneMax = (int)$seance['nbPersonneMax'];
+                            $nbParticipants = (int)$seance['nbParticipants'];
+                            $moniteurAbrege = htmlspecialchars($seance['moniteurAbrege']);
 
                             if ($jours[$seance['jour']] == $jour && $heureDebut == $heure) {
-                                echo "<td class='reserved' rowspan='$duree'>Réservé</td>";
-
-                                // Marquer les heures suivantes comme occupées
-                                for ($i = 1; $i < $duree; $i++) {
+                                // Calcul du créneau horaire final
+                                for ($i = 0; $i < $duree; $i++) {
                                     $heureOccupee = date('H:i', strtotime("$heure +$i hour"));
-                                    $heuresOccupees["$jour-$heureOccupee"] = true;
+                                    $occupes["$jour-$heureOccupee"] = true;
                                 }
+
+                                echo "<td class='reserved' rowspan='$duree'>
+                                    <span class='user-icon'></span> 
+                                    $nbPersonneMax - $moniteurAbrege
+                                </td>";
 
                                 $reservationTrouvee = true;
                                 break;
@@ -249,8 +257,7 @@ $jours = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sat
 
     <!-- Pied de page -->
     <footer>
-        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php" style="color: #ffccbc;">Contactez-nous</a></p>
+        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
     </footer>
-
 </body>
 </html>
