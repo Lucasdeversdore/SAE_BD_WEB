@@ -2,45 +2,49 @@
 session_start();
 require 'db.php';
 
+// Vérification de l'accès admin
 if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
     header("Location: index.php"); 
     exit;
 }
 
 $message = "";
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Récupération et validation des données du formulaire
     $nomP = htmlspecialchars(trim($_POST['nomP']));
     $poidsMax = floatval($_POST['poidsMax']);
     $imagePoney = $_FILES['imagePoney'];
 
     if ($nomP && $poidsMax > 0 && $imagePoney['tmp_name']) {
         try {
+            // Vérification de l'existence du dossier "poney/"
+            $targetDir = "poney/";
+            if (!is_dir($targetDir)) {
+                mkdir($targetDir, 0755, true);
+            }
 
-            $imageName = basename($imagePoney['name']);
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM PONEY WHERE imagePoney = :imageName");
-            $stmt->execute([':imageName' => $imageName]);
-            $imageExists = $stmt->fetchColumn();
+            // Connexion à la base de données
+            $stmt = $pdo->query("SELECT IFNULL(MAX(idPoney), 0) + 1 AS nextId FROM PONEY");
+            $nextId = $stmt->fetch(PDO::FETCH_ASSOC)['nextId'];
 
-            if ($imageExists > 0) {
-                $message = "Cette image existe déjà dans la base de données.";
+            // Vérification de l'unicité de l'image
+            $imageName = "poney" . $nextId . "." . pathinfo($imagePoney['name'], PATHINFO_EXTENSION);
+            $targetFilePath = $targetDir . $imageName;
+
+            // Déplacement de l'image uploadée
+            if (move_uploaded_file($imagePoney['tmp_name'], $targetFilePath)) {
+                // Insertion des données dans la base
+                $stmt = $pdo->prepare("INSERT INTO PONEY (nomP, poidsMax, imagePoney) VALUES (:nomP, :poidsMax, :imagePoney)");
+                $stmt->execute([
+                    ':nomP' => $nomP,
+                    ':poidsMax' => $poidsMax,
+                    ':imagePoney' => $imageName
+                ]);
+
+                $message = "Poney ajouté avec succès !";
             } else {
-                $stmt = $pdo->query("SELECT IFNULL(MAX(idPoney), 0) + 1 AS nextId FROM PONEY");
-                $nextId = $stmt->fetch(PDO::FETCH_ASSOC)['nextId'];
-                $newImageName = "poney" . $nextId . "." . pathinfo($imageName, PATHINFO_EXTENSION);
-                $targetFilePath = $newImageName;
-
-                if (move_uploaded_file($imagePoney['tmp_name'], $targetFilePath)) {
-                    $stmt = $pdo->prepare("INSERT INTO PONEY (nomP, poidsMax, imagePoney) VALUES (:nomP, :poidsMax, :imagePoney)");
-                    $stmt->execute([
-                        ':nomP' => $nomP,
-                        ':poidsMax' => $poidsMax,
-                        ':imagePoney' => $targetFilePath
-                    ]);
-
-                    $message = "Poney ajouté avec succès !";
-                } else {
-                    $message = "Erreur lors de l'enregistrement de l'image.";
-                }
+                $message = "Erreur lors du téléchargement de l'image.";
             }
         } catch (PDOException $e) {
             $message = "Erreur : " . $e->getMessage();
