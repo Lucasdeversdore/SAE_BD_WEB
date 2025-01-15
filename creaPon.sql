@@ -97,20 +97,20 @@ CREATE TABLE SEANCE (
   FOREIGN KEY (idCours) REFERENCES COURS (idCours)
 );
 
--- Trigger: Vérification du nombre maximum de participants
---CREATE TRIGGER VerifNbParticipants
---BEFORE INSERT ON PARTICIPER
---WHEN (SELECT COUNT(*) FROM PARTICIPER WHERE idSeance = NEW.idSeance) >= 
---     (SELECT nbPersonneMax FROM SEANCE WHERE idSeance = NEW.idSeance)
---BEGIN
---  SELECT RAISE(ABORT, 'Nombre maximum de participants atteint pour cette séance.');
---END;
+Trigger: Vérification du nombre maximum de participants
+CREATE TRIGGER VerifNbParticipants
+BEFORE INSERT ON PARTICIPER
+WHEN (SELECT COUNT(*) FROM PARTICIPER WHERE idSeance = NEW.idSeance) >= 
+    (SELECT nbPersonneMax FROM SEANCE WHERE idSeance = NEW.idSeance)
+BEGIN
+ SELECT RAISE(ABORT, 'Nombre maximum de participants atteint pour cette séance.');
+END;
 
--- Trigger: Vérification de la durée du cours
---CREATE TRIGGER VerifDureeCours
---BEFORE INSERT ON SEANCE
---WHEN NEW.duree NOT IN (1, 2)
---BEGIN
---  SELECT RAISE(ABORT, 'La durée du cours doit être de 1 ou 2 heures.');
---END;
+Trigger: Vérification de la durée du cours
+CREATE TRIGGER VerifDureeCours
+BEFORE INSERT ON SEANCE
+WHEN NEW.duree NOT IN (1, 2)
+BEGIN
+ SELECT RAISE(ABORT, 'La durée du cours doit être de 1 ou 2 heures.');
+END;
 
