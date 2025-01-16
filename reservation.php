@@ -5,6 +5,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Vérifie si l'utilisateur est administrateur
+$isAdmin = isset($_SESSION['est_admin']);
+
 require 'db.php';
 
 $sqlClient = "SELECT poids FROM PERSONNE WHERE idPersonne = ?";
@@ -64,7 +67,6 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             min-height: 100vh;
         }
 
-        /* Navigation */
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
@@ -175,7 +177,7 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
 <body>
     <div class="nav">
         <div>
-            <a href="index.php">Accueil</a>
+            <a href="<?= $isAdmin ? 'page_admin.php' : 'index.php' ?>">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
             <a href="mes_reservations.php">Mes Réservations</a>
@@ -183,7 +185,7 @@ $reservationsUtilisateur = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
         <div>
             <?php if (isset($_SESSION['user_id'])): ?>
                 <span class="user-info">
-                    <?= 'Bonjour, ' . htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
+                    Bonjour, <?= htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
                 </span>
                 <a href="logout.php">Déconnexion</a>
             <?php endif; ?>

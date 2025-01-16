@@ -86,12 +86,12 @@ $result_personnes = $pdo->query($query_personnes);
         }
 
         .nav {
-            background-color: #0288d1;
-            color: white;
+            background-color: #00796b;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -101,7 +101,8 @@ $result_personnes = $pdo->query($query_personnes);
             color: white;
             text-decoration: none;
             margin: 0 15px;
-            font-weight: bold;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
         }
 
         .nav a:hover {
@@ -118,7 +119,7 @@ $result_personnes = $pdo->query($query_personnes);
         }
 
         h1, h2 {
-            color: #0288d1;
+            color: #00796b;
             text-align: center;
         }
 
@@ -143,7 +144,7 @@ $result_personnes = $pdo->query($query_personnes);
         }
 
         .form button {
-            background-color: #0288d1;
+            background-color: #00796b;
             color: white;
             border: none;
             cursor: pointer;
@@ -170,7 +171,7 @@ $result_personnes = $pdo->query($query_personnes);
         }
 
         footer {
-            background-color: #0288d1;
+            background-color: #00796b;
             color: white;
             text-align: center;
             padding: 10px 0;
@@ -202,7 +203,7 @@ $result_personnes = $pdo->query($query_personnes);
     <div class="container">
         <h1>Gestion des Personnes et des Moniteurs</h1>
 
-        <!-- Message Personne -->
+        <!-- Personne -->
         <?php if ($message_personne): ?>
             <div class="message <?php echo strpos($message_personne, 'Erreur') === false ? 'success' : 'error'; ?>">
                 <?php echo htmlspecialchars($message_personne); ?>
@@ -232,7 +233,7 @@ $result_personnes = $pdo->query($query_personnes);
             <button type="submit" name="ajouter_personne">Ajouter la Personne</button>
         </form>
 
-        <!-- Message Moniteur -->
+        <!-- Moniteur -->
         <?php if ($message_moniteur): ?>
             <div class="message <?php echo strpos($message_moniteur, 'Erreur') === false ? 'success' : 'error'; ?>">
                 <?php echo htmlspecialchars($message_moniteur); ?>

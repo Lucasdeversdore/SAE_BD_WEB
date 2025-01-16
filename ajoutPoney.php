@@ -11,7 +11,6 @@ if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
 $message = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    // Récupération et validation des données du formulaire
     $nomP = htmlspecialchars(trim($_POST['nomP']));
     $poidsMax = floatval($_POST['poidsMax']);
     $imagePoney = $_FILES['imagePoney'];
@@ -24,15 +23,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 mkdir($targetDir, 0755, true);
             }
 
-            // Connexion à la base de données
             $stmt = $pdo->query("SELECT IFNULL(MAX(idPoney), 0) + 1 AS nextId FROM PONEY");
             $nextId = $stmt->fetch(PDO::FETCH_ASSOC)['nextId'];
 
-            // Vérification de l'unicité de l'image
+            // Verif de l'image
             $imageName = "poney" . $nextId . "." . pathinfo($imagePoney['name'], PATHINFO_EXTENSION);
             $targetFilePath = $targetDir . $imageName;
 
-            // Déplacement de l'image uploadée
+            // Déplacemer l'image
             if (move_uploaded_file($imagePoney['tmp_name'], $targetFilePath)) {
                 // Insertion des données dans la base
                 $stmt = $pdo->prepare("INSERT INTO PONEY (nomP, poidsMax, imagePoney) VALUES (:nomP, :poidsMax, :imagePoney)");
@@ -76,26 +74,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Ombre pour plus de visibilité */
         }
 
         .nav a {
             color: white;
             text-decoration: none;
             margin: 0 15px;
-            font-weight: bold;
-            transition: color 0.3s ease; /* Animation lors du survol */
+            font-weight: 500;
+            transition: opacity 0.3s ease;
         }
 
         .nav a:hover {
-            color: #004d40; /* Couleur au survol */
-        }
-
-        .nav a.active {
-            color: #004d40; /* Couleur active pour la page en cours */
+            opacity: 0.8;
         }
 
         .container {
@@ -161,11 +155,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
     <div class="nav">
-        <a href="page_admin.php">Accueil</a>
-        <a href="calendar.php">Calendrier</a>
-        <a href="reservation.php">Réservation</a>
-        <a href="mes_reservations.php">Mes Réservations</a>
+        <div class="left-links">
+            <a href="page_admin.php">Accueil</a>
+            <a href="calendar.php">Calendrier</a>
+            <a href="reservation.php">Réservation</a>
+            <a href="mes_reservations.php">Mes Réservations</a>
+        </div>
+        <div class="right-links">
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <span class="user-info">
+                    Bonjour, <?php echo htmlspecialchars($_SESSION['prenom']) . " " . htmlspecialchars($_SESSION['nom']); ?>
+                </span>
+                <a href="logout.php">Déconnexion</a>
+            <?php else: ?>
+                <a href="login.php">Connexion</a>
+                <a href="register.php">Inscription</a>
+            <?php endif; ?>
+        </div>
     </div>
+
     <div class="container">
         <h2>Ajouter un Poney</h2>
         <?php if ($message): ?>

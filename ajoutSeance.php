@@ -87,6 +87,7 @@ if (isset($_POST['ajouter_seance'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -96,7 +97,7 @@ if (isset($_POST['ajouter_seance'])) {
             color: white;
             text-decoration: none;
             margin: 0 15px;
-            font-weight: bold;
+            font-weight: 500;
             transition: opacity 0.3s ease;
         }
 
@@ -213,8 +214,7 @@ if (isset($_POST['ajouter_seance'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Formulaires -->
-        <!-- Ajouter un cours -->
+        <!-- Ajouter cours -->
         <form action="ajoutSeance.php" method="POST" class="form">
             <h2>Ajouter un Cours</h2>
             <label for="id_cours">ID du Cours :</label>
@@ -224,9 +224,10 @@ if (isset($_POST['ajouter_seance'])) {
             <button type="submit" name="ajouter_cours">Ajouter le Cours</button>
         </form>
 
-        <!-- Ajouter une séance -->
+        <!-- Ajouter Séance -->
         <form action="ajoutSeance.php" method="POST" class="form">
             <h2>Ajouter une Séance</h2>
+
             <label for="id_cours">Sélectionner le Cours :</label>
             <select id="id_cours" name="id_cours" required>
                 <?php
@@ -237,15 +238,57 @@ if (isset($_POST['ajouter_seance'])) {
                 }
                 ?>
             </select>
-            <!-- Autres champs pour la séance -->
-            <label for="date_debut">Date de début :</label>
+
+            <label for="date_debut">Date de début (YYYY-MM-DD HH:MM:SS) :</label>
             <input type="datetime-local" id="date_debut" name="date_debut" required>
+
+            <label for="date_fin">Date de fin (YYYY-MM-DD HH:MM:SS) :</label>
+            <input type="datetime-local" id="date_fin" name="date_fin" required>
+
+            <label for="duree">Durée (en heures) :</label>
+            <select id="duree" name="duree" required>
+                <option value="1">1 heure</option>
+                <option value="2">2 heures</option>
+            </select>
+
+            <label for="particulier">Cours particulier :</label>
+            <input type="checkbox" id="particulier" name="particulier" value="1">
+            <label for="particulier">Oui</label>
+
+            <label for="nb_personne_max">Nombre maximum de personnes :</label>
+            <input type="number" id="nb_personne_max" name="nb_personne_max" required>
+
+            <label for="niveau">Niveau :</label>
+            <input type="text" id="niveau" name="niveau" required>
+
+            <label for="id_moniteur">Sélectionner le Moniteur :</label>
+            <select id="id_moniteur" name="id_moniteur" required>
+            <?php
+                $query_moniteur = "
+                SELECT m.idMoniteur, p.prenom, p.nom
+                FROM MONITEUR m
+                JOIN Personne p ON m.idMoniteur = p.idPersonne
+                ";
+                $stmt_moniteur = $pdo->query($query_moniteur);
+                            
+                while ($row = $stmt_moniteur->fetch(PDO::FETCH_ASSOC)) {
+                $moniteurFullName = $row['prenom'] . ' ' . $row['nom'];
+                echo "<option value='" . $row['idMoniteur'] . "'>" . htmlspecialchars($moniteurFullName) . "</option>";
+            }
+
+            ?>
+            </select>
+
+            </select>
+
             <button type="submit" name="ajouter_seance">Ajouter la Séance</button>
         </form>
+
     </div>
 
     <footer>
-        <p>&copy; 2025. Tous droits réservés.</p>
+        <p>&copy; 2025, Tous droits réservés.</p>
     </footer>
+
 </body>
 </html>
