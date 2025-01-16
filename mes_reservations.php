@@ -7,6 +7,10 @@ if (!isset($_SESSION['user_id'])) {
 
 require 'db.php';
 
+// Vérifie si l'utilisateur est administrateur
+$isAdmin = isset($_SESSION['est_admin']);
+
+// Suppression de réservation
 if (isset($_POST['delete_reservation'])) {
     $idPoney = $_POST['delete_id_poney'];
     $idSeance = $_POST['delete_id_seance'];
@@ -19,7 +23,7 @@ if (isset($_POST['delete_reservation'])) {
     exit;
 }
 
-
+// Récupération des réservations
 $sqlReservations = "
     SELECT P.nomP, S.dateDebut, S.dateFin, PR.idPoney, PR.idSeance
     FROM PARTICIPER PR
@@ -30,8 +34,8 @@ $sqlReservations = "
 $stmtReservations = $pdo->prepare($sqlReservations);
 $stmtReservations->execute([$_SESSION['user_id']]);
 $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -140,7 +144,7 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="nav">
         <div>
-            <a href="index.php">Accueil</a>
+            <a href="<?= $isAdmin ? 'page_admin.php' : 'index.php' ?>">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
             <a href="mes_reservations.php">Mes Réservations</a>
@@ -154,6 +158,7 @@ $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
             <?php endif; ?>
         </div>
     </div>
+
 
     <div class="les_reserv">
         <h1>Mes Réservations</h1>

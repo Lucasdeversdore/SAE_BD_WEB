@@ -94,10 +94,11 @@ CREATE TABLE SEANCE (
   niveau        TEXT,
   idMoniteur    INTEGER NOT NULL,
   idCours       INTEGER NOT NULL,
+  check(duree = 1 or duree = 2),
   FOREIGN KEY (idCours) REFERENCES COURS (idCours)
 );
 
-Trigger: Vérification du nombre maximum de participants
+-- Trigger: Vérification du nombre maximum de participants
 CREATE TRIGGER VerifNbParticipants
 BEFORE INSERT ON PARTICIPER
 WHEN (SELECT COUNT(*) FROM PARTICIPER WHERE idSeance = NEW.idSeance) >= 
@@ -106,7 +107,7 @@ BEGIN
  SELECT RAISE(ABORT, 'Nombre maximum de participants atteint pour cette séance.');
 END;
 
-Trigger: Vérification de la durée du cours
+--  Trigger: Vérification de la durée du cours
 CREATE TRIGGER VerifDureeCours
 BEFORE INSERT ON SEANCE
 WHEN NEW.duree NOT IN (1, 2)

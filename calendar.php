@@ -6,6 +6,9 @@ $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 $dateDebut = date('Y-m-d', strtotime("now +$offset week"));
 $dateFin = date('Y-m-d', strtotime("now +$offset week +6 days"));
 
+// Vérifie si l'utilisateur est administrateur
+$isAdmin = isset($_SESSION['est_admin']);
+
 $query = "
     SELECT 
         (strftime('%w', S.dateDebut) + 6) % 7 AS jour,
@@ -154,7 +157,7 @@ $occupes = [];
 <body>
     <div class="nav">
         <div class="left-links">
-            <a href="index.php">Accueil</a>
+            <a href="<?= $isAdmin ? 'page_admin.php' : 'index.php' ?>">Accueil</a>
             <a href="calendar.php">Calendrier</a>
             <a href="reservation.php">Réservation</a>
             <a href="mes_reservations.php">Mes Réservations</a>
@@ -164,36 +167,38 @@ $occupes = [];
                 <span class="user-info">
                     Bonjour, <?php echo htmlspecialchars($_SESSION['prenom']) . " " . htmlspecialchars($_SESSION['nom']); ?>
                 </span>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                    <a href="page_admin.php">Admin</a>
+                <?php endif; ?>
                 <a href="logout.php">Déconnexion</a>
             <?php else: ?>
                 <a href="login.php">Connexion</a>
                 <a href="register.php">Inscription</a>
             <?php endif; ?>
-        </div> 
-    </div> 
+        </div>
+    </div>
     <h1 style="text-align: center; color: #00796b; margin-top: 40px;">Calendrier des Cours de Poney</h1>
     <h2 style="text-align: center; color: #555;">Semaine du <?php echo date('d/m/Y', strtotime($dateDebut)); ?> au <?php echo date('d/m/Y', strtotime($dateFin)); ?></h2>
     <div class="week-nav">
-        <a href="calendar.php?offset=<?php echo $offset - 1; ?>"> 
-            <button <?php if ($offset <= 0) echo 'disabled'; ?>>Semaine précédente</button> 
-        </a> 
-        <a href="calendar.php?offset=<?php echo $offset + 1; ?>"> 
-            <button>Semaine suivante</button>  
-        </a> 
+        <a href="calendar.php?offset=<?php echo $offset - 1; ?>">
+            <button <?php if ($offset <= 0) echo 'disabled'; ?>>Semaine précédente</button>
+        </a>
+        <a href="calendar.php?offset=<?php echo $offset + 1; ?>">
+            <button>Semaine suivante</button>
+        </a>
     </div>
-    <div style="overflow-x: auto; padding: 0 20px;">   
-        <table border="1" cellpadding="10" cellspacing="0"> 
+    <div style="overflow-x: auto; padding: 0 20px;">
+        <table border="1" cellpadding="10" cellspacing="0">
             <tr>
                 <th>Heure</th>
                 <?php foreach ($jours as $jour): ?>
                     <th><?php echo $jour; ?></th>
                 <?php endforeach; ?>
             </tr>
-
-            <?php foreach ($heures as $heure): ?> 
+            <?php foreach ($heures as $heure): ?>
                 <tr>
-                    <td><?php echo $heure; ?></td> 
-                    <?php foreach ($jours as $jour): ?> 
+                    <td><?php echo $heure; ?></td>
+                    <?php foreach ($jours as $jour): ?>
                         <?php 
                         if (isset($occupes["$jour-$heure"])) { 
                             continue; 
@@ -209,7 +214,6 @@ $occupes = [];
                             $moniteurAbrege = htmlspecialchars($seance['moniteurAbrege']);
 
                             if ($jours[$seance['jour']] == $jour && $heureDebut == $heure) {
-                                // Calcul du créneau horaire final
                                 for ($i = 0; $i < $duree; $i++) {
                                     $heureOccupee = date('H:i', strtotime("$heure +$i hour"));
                                     $occupes["$jour-$heureOccupee"] = true;

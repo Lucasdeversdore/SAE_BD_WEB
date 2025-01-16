@@ -3,7 +3,7 @@ session_start();
 require 'db.php';
 
 if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
-    header("Location: index.php"); 
+    header("Location: index.php");
     exit;
 }
 
@@ -87,6 +87,7 @@ if (isset($_POST['ajouter_seance'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -96,7 +97,12 @@ if (isset($_POST['ajouter_seance'])) {
             color: white;
             text-decoration: none;
             margin: 0 15px;
-            font-weight: bold;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav a:hover {
+            opacity: 0.8;
         }
 
         .container {
@@ -124,23 +130,13 @@ if (isset($_POST['ajouter_seance'])) {
             font-weight: bold;
         }
 
-        .form input, .form select, .form textarea, .form button {
+        .form input, .form select, .form button {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
-        }
-
-        .form textarea {
-            resize: vertical;
-            height: 100px;
-        }
-
-        .form input:focus, .form select:focus, .form textarea:focus {
-            border-color: #00796b;
-            outline: none;
         }
 
         .form button {
@@ -170,12 +166,6 @@ if (isset($_POST['ajouter_seance'])) {
             color: green;
         }
 
-        hr {
-            margin: 40px 0;
-            border: 0;
-            border-top: 1px solid #ddd;
-        }
-
         footer {
             background-color: #00796b;
             color: white;
@@ -190,10 +180,23 @@ if (isset($_POST['ajouter_seance'])) {
 <body>
 
     <div class="nav">
-        <a href="page_admin.php">Accueil</a>
-        <a href="calendar.php">Calendrier</a>
-        <a href="reservation.php">Réservation</a>
-        <a href="mes_reservations.php">Mes Réservations</a>
+        <div class="left-links">
+            <a href="page_admin.php">Accueil</a>
+            <a href="calendar.php">Calendrier</a>
+            <a href="reservation.php">Réservation</a>
+            <a href="mes_reservations.php">Mes Réservations</a>
+        </div>
+        <div class="right-links">
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <span class="user-info">
+                    Bonjour, <?php echo htmlspecialchars($_SESSION['prenom']) . " " . htmlspecialchars($_SESSION['nom']); ?>
+                </span>
+                <a href="logout.php">Déconnexion</a>
+            <?php else: ?>
+                <a href="login.php">Connexion</a>
+                <a href="register.php">Inscription</a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="container">
@@ -211,20 +214,17 @@ if (isset($_POST['ajouter_seance'])) {
             </div>
         <?php endif; ?>
 
+        <!-- Ajouter cours -->
         <form action="ajoutSeance.php" method="POST" class="form">
             <h2>Ajouter un Cours</h2>
-
             <label for="id_cours">ID du Cours :</label>
             <input type="number" id="id_cours" name="id_cours" required>
-
             <label for="type_cours">Type du Cours :</label>
             <input type="text" id="type_cours" name="type_cours" required>
-
             <button type="submit" name="ajouter_cours">Ajouter le Cours</button>
         </form>
 
-        <hr>
-
+        <!-- Ajouter Séance -->
         <form action="ajoutSeance.php" method="POST" class="form">
             <h2>Ajouter une Séance</h2>
 
@@ -274,10 +274,10 @@ if (isset($_POST['ajouter_seance'])) {
                 while ($row = $stmt_moniteur->fetch(PDO::FETCH_ASSOC)) {
                 $moniteurFullName = $row['prenom'] . ' ' . $row['nom'];
                 echo "<option value='" . $row['idMoniteur'] . "'>" . htmlspecialchars($moniteurFullName) . "</option>";
-        }
+            }
 
-    ?>
-</select>
+            ?>
+            </select>
 
             </select>
 
