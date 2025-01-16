@@ -5,6 +5,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+
+
 require 'db.php';
 
 if (isset($_POST['delete_reservation'])) {

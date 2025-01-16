@@ -79,6 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             position: sticky;
             top: 0;
             z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Ombre pour plus de visibilité */
         }
 
         .nav a {
@@ -86,6 +87,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             text-decoration: none;
             margin: 0 15px;
             font-weight: bold;
+            transition: color 0.3s ease; /* Animation lors du survol */
+        }
+
+        .nav a:hover {
+            color: #004d40; /* Couleur au survol */
+        }
+
+        .nav a.active {
+            color: #004d40; /* Couleur active pour la page en cours */
         }
 
         .container {

@@ -5,3 +5,5 @@ sqlite3 bd.db ".read creaPon.sql"
 (Pour la remplir)
 
 sqlite3 bd.db ".read insPon.sql"
+
+php -S localhost:5555
