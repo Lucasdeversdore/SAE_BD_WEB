@@ -66,7 +66,8 @@ CREATE TABLE PERSONNE (
   email      TEXT UNIQUE,
   poids      REAL,
   mdp        TEXT,
-  est_admin BOOLEAN
+  est_admin BOOLEAN,
+  est_moniteur BOOLEAN
 );
 
 CREATE TABLE PONEY (

@@ -1,11 +1,32 @@
 <?php
 session_start();
 
-if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
-    header("Location: page_admin.php");
-    exit();
-}
+if (isset($_SESSION['user_id'])) {
 
+    $pdo = new PDO('sqlite:bd.db');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Savoir qu'elle role le gars a 
+    $stmt = $pdo->prepare('SELECT est_admin, est_moniteur FROM PERSONNE WHERE idPersonne = :id');
+    $stmt->execute(['id' => $_SESSION['user_id']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user) {
+        if ($user['est_admin'] == 1) {
+            $_SESSION['role'] = 'admin';
+        } elseif ($user['est_moniteur'] == 1) {
+            $_SESSION['role'] = 'moniteur'; 
+        }
+
+        if ($_SESSION['role'] === 'admin') {
+            header("Location: page_admin.php");
+            exit();
+        } elseif ($_SESSION['role'] === 'moniteur') {
+            header("Location: page_moniteur.php");
+            exit();
+        } 
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -232,8 +253,6 @@ if (isset($_SESSION['user_id']) && $_SESSION['role'] === 'admin') {
             </div>
         </div>
     </section>
-
-    <!-- Pied de page -->
     <footer>
         <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
     </footer>

@@ -1,9 +1,8 @@
-INSERT INTO PERSONNE (idPersonne, prenom, nom, numTel, email, poids, mdp, est_admin)
-VALUES (1, 'Jean', 'Dupont', 123456789, 'jean.dupont@example.com', 75.0, 'password123', FALSE),
-       (2, 'Marie', 'Martin', 987654321, 'marie.martin@example.com', 60.0, 'password456', FALSE),
-       (3, 'Lucas', 'Devers-Dore', 12145456, 'lucasdeversdore@gmail.com', 80, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', FALSE),
-       (4, 'test', 'test-test', 121454546, 'test@test', 1, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', FALSE),
-       (5, 'admin', 'admin-admin', 12145454426, 'admin@admin', 1, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', TRUE);
+INSERT INTO PERSONNE (idPersonne, prenom, nom, numTel, email, poids, mdp, est_admin, est_moniteur)
+VALUES   (10, 'moniteur', 'moniteur-moniteur', 121454554426, 'mon@mon', 1, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', FALSE, TRUE),
+        (3, 'Lucas', 'Devers-Dore', 12145456, 'lucasdeversdore@gmail.com', 80, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', FALSE, FALSE),
+       (4, 'test', 'test-test', 121454546, 'test@test', 1, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', FALSE, FALSE),
+       (5, 'admin', 'admin-admin', 12145454426, 'admin@admin', 1, '$2y$12$rmmPrABovYtGKEuBlFRkIurHH7zUqAhFj2g9zQGT4nSzcBEPKoPAq', TRUE, FALSE);
 
 INSERT INTO CLIENT (idCl, idPersonne, dateDeNaissance, niveau, cotisation)
 VALUES (1, 1, '1990-06-25', 'Débutant', 'Annuel'),
@@ -11,7 +10,8 @@ VALUES (1, 1, '1990-06-25', 'Débutant', 'Annuel'),
 
 
 INSERT INTO MONITEUR (idMoniteur, idPersonne, dateDeNaissance)
-VALUES (1, 2, '1988-03-20');  
+VALUES (1, 10, '1988-03-20');
+        
 
 
 INSERT INTO COURS (idCours, typeCours)
