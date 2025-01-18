@@ -25,8 +25,8 @@ if (isset($_POST['ajouter_personne'])) {
 
     try {
         // Ajouter la personne dans la table PERSONNE
-        $stmt = $pdo->prepare("INSERT INTO PERSONNE (prenom, nom, numTel, email, poids, mdp, est_admin) 
-                               VALUES (:prenom, :nom, :numTel, :email, :poids, :mdp, :est_admin)");
+        $stmt = $pdo->prepare("INSERT INTO PERSONNE (prenom, nom, numTel, email, poids, mdp, est_admin, est_moniteur) 
+                               VALUES (:prenom, :nom, :numTel, :email, :poids, :mdp, :est_admin, :est_moniteur)");
         $stmt->execute([
             ':prenom' => $prenom,
             ':nom' => $nom,
@@ -34,7 +34,8 @@ if (isset($_POST['ajouter_personne'])) {
             ':email' => $email,
             ':poids' => $poids,
             ':mdp' => $mdp,
-            ':est_admin' => $est_admin
+            ':est_admin' => $est_admin,
+            ':est_moniteur' => $est_moniteur
         ]);
 
         // Récupérer l'idPersonne de la personne nouvellement ajoutée

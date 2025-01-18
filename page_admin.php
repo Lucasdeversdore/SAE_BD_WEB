@@ -127,7 +127,7 @@ if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
     </section>
 
     <footer>
-        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
+        © <?= date('Y') ?> Poney Club - Tous droits réservés
     </footer>
 </body>
 </html>

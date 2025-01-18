@@ -2,6 +2,7 @@
 session_start();
 require 'db.php';
 
+// Vérification si l'utilisateur est un administrateur
 if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
     header("Location: index.php");
     exit;
@@ -10,6 +11,7 @@ if (!isset($_SESSION['est_admin']) || !$_SESSION['est_admin']) {
 $message_cours = "";
 $message_seance = "";
 
+// Traitement pour ajouter un cours
 if (isset($_POST['ajouter_cours'])) {
     $id_cours = $_POST['id_cours'];
     $type_cours = htmlspecialchars(trim($_POST['type_cours']));
@@ -35,6 +37,7 @@ if (isset($_POST['ajouter_cours'])) {
     }
 }
 
+// Traitement pour ajouter une séance
 if (isset($_POST['ajouter_seance'])) {
     $id_cours = $_POST['id_cours'];
     $date_debut = $_POST['date_debut'];
@@ -202,6 +205,7 @@ if (isset($_POST['ajouter_seance'])) {
     <div class="container">
         <h1>Ajouter un Cours et une Séance</h1>
 
+        <!-- Messages de retour -->
         <?php if ($message_cours): ?>
             <div class="message <?php echo strpos($message_cours, 'Erreur') === false ? 'success' : 'error'; ?>">
                 <?php echo htmlspecialchars($message_cours); ?>
@@ -214,8 +218,8 @@ if (isset($_POST['ajouter_seance'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Ajouter cours -->
-        <form action="ajoutSeance.php" method="POST" class="form">
+        <!-- Formulaire Ajouter un Cours -->
+        <form action="" method="POST" class="form">
             <h2>Ajouter un Cours</h2>
             <label for="id_cours">ID du Cours :</label>
             <input type="number" id="id_cours" name="id_cours" required>
@@ -224,10 +228,9 @@ if (isset($_POST['ajouter_seance'])) {
             <button type="submit" name="ajouter_cours">Ajouter le Cours</button>
         </form>
 
-        <!-- Ajouter Séance -->
-        <form action="ajoutSeance.php" method="POST" class="form">
+        <!-- Formulaire Ajouter une Séance -->
+        <form action="" method="POST" class="form">
             <h2>Ajouter une Séance</h2>
-
             <label for="id_cours">Sélectionner le Cours :</label>
             <select id="id_cours" name="id_cours" required>
                 <?php
@@ -239,13 +242,13 @@ if (isset($_POST['ajouter_seance'])) {
                 ?>
             </select>
 
-            <label for="date_debut">Date de début (YYYY-MM-DD HH:MM:SS) :</label>
+            <label for="date_debut">Date de début :</label>
             <input type="datetime-local" id="date_debut" name="date_debut" required>
 
-            <label for="date_fin">Date de fin (YYYY-MM-DD HH:MM:SS) :</label>
+            <label for="date_fin">Date de fin :</label>
             <input type="datetime-local" id="date_fin" name="date_fin" required>
 
-            <label for="duree">Durée (en heures) :</label>
+            <label for="duree">Durée (heures) :</label>
             <select id="duree" name="duree" required>
                 <option value="1">1 heure</option>
                 <option value="2">2 heures</option>
@@ -253,7 +256,6 @@ if (isset($_POST['ajouter_seance'])) {
 
             <label for="particulier">Cours particulier :</label>
             <input type="checkbox" id="particulier" name="particulier" value="1">
-            <label for="particulier">Oui</label>
 
             <label for="nb_personne_max">Nombre maximum de personnes :</label>
             <input type="number" id="nb_personne_max" name="nb_personne_max" required>
@@ -263,27 +265,21 @@ if (isset($_POST['ajouter_seance'])) {
 
             <label for="id_moniteur">Sélectionner le Moniteur :</label>
             <select id="id_moniteur" name="id_moniteur" required>
-            <?php
+                <?php
                 $query_moniteur = "
                 SELECT m.idMoniteur, p.prenom, p.nom
                 FROM MONITEUR m
-                JOIN Personne p ON m.idMoniteur = p.idPersonne
+                JOIN PERSONNE p ON m.idPersonne = p.idPersonne
                 ";
-                $stmt_moniteur = $pdo->query($query_moniteur);
-                            
-                while ($row = $stmt_moniteur->fetch(PDO::FETCH_ASSOC)) {
-                $moniteurFullName = $row['prenom'] . ' ' . $row['nom'];
-                echo "<option value='" . $row['idMoniteur'] . "'>" . htmlspecialchars($moniteurFullName) . "</option>";
-            }
-
-            ?>
-            </select>
-
+                $result_moniteur = $pdo->query($query_moniteur);
+                while ($row = $result_moniteur->fetch(PDO::FETCH_ASSOC)) {
+                    echo "<option value='" . $row['idMoniteur'] . "'>" . htmlspecialchars($row['prenom'] . ' ' . $row['nom']) . "</option>";
+                }
+                ?>
             </select>
 
             <button type="submit" name="ajouter_seance">Ajouter la Séance</button>
         </form>
-
     </div>
 
     <footer>

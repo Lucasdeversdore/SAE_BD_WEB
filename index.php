@@ -6,26 +6,40 @@ if (isset($_SESSION['user_id'])) {
     $pdo = new PDO('sqlite:bd.db');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Savoir qu'elle role le gars a 
-    $stmt = $pdo->prepare('SELECT est_admin, est_moniteur FROM PERSONNE WHERE idPersonne = :id');
+    // Savoir quel rôle l'utilisateur a
+    $stmt = $pdo->prepare('SELECT est_admin, est_moniteur, prenom, nom FROM PERSONNE WHERE idPersonne = :id');
     $stmt->execute(['id' => $_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
+        // Ajouter les informations utilisateur à la session
+        $_SESSION['prenom'] = $user['prenom'];
+        $_SESSION['nom'] = $user['nom'];
+
+        // Déterminer le rôle
         if ($user['est_admin'] == 1) {
             $_SESSION['role'] = 'admin';
         } elseif ($user['est_moniteur'] == 1) {
             $_SESSION['role'] = 'moniteur'; 
+        } else {
+            $_SESSION['role'] = 'client'; // Rôle par défaut si ni admin ni moniteur
         }
 
+        // Redirection en fonction du rôle
         if ($_SESSION['role'] === 'admin') {
             header("Location: page_admin.php");
             exit();
-        } elseif ($_SESSION['role'] === 'moniteur') {
-            header("Location: page_moniteur.php");
-            exit();
-        } 
+        }
+
+    } else {
+        // Si aucun utilisateur trouvé, afficher une erreur
+        echo "Erreur : utilisateur introuvable.";
+        exit();
     }
+} else {
+    // Si aucune session utilisateur active, redirection vers la page de connexion
+    header("Location: login.php");
+    exit();
 }
 ?>
 
@@ -197,9 +211,12 @@ if (isset($_SESSION['user_id'])) {
     <div class="nav">
         <div class="left-links">
             <a href="index.php">Accueil</a>
-            <a href="calendar.php">Calendrier</a>
-            <a href="reservation.php">Réservation</a>
-            <a href="mes_reservations.php">Mes Réservations</a>
+            <!-- Si l'utilisateur est un moniteur, rediriger vers calendar_moniteur.php -->
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'moniteur'): ?>
+                <a href="calendar_moniteur.php">Calendrier</a>
+            <?php else: ?>
+                <a href="calendar.php">Calendrier</a>
+            <?php endif; ?>
         </div>
         <div class="right-links">
             <?php if (isset($_SESSION['user_id'])): ?>
@@ -220,10 +237,15 @@ if (isset($_SESSION['user_id'])) {
                 Venez découvrir un lieu unique dédié à l’équitation en plein cœur de la Sologne. 
                 Profitez de cours encadrés par des moniteurs qualifiés, des poneys bienveillants et des infrastructures modernes.
             </p>
-            <button onclick="location.href='reservation.php'">Réservez un cours</button>
+            <!-- Bouton adapté en fonction du rôle -->
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'moniteur'): ?>
+                <button onclick="location.href='calendar_moniteur.php'">Voir mon calendrier</button>
+            <?php else: ?>
+                <button onclick="location.href='calendar.php'">Réservez un cours</button>
+            <?php endif; ?>
         </div>
         <div class="hero-image">
-            <img src="img/poney.png" alt="Enfant avec un poney">
+            <img src="img/poney.png" alt="Poney">
         </div>
     </section>
     <section class="presentation">
@@ -254,7 +276,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </section>
     <footer>
-        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
+        © <?= date('Y') ?> Poney Club - Tous droits réservés
     </footer>
 </body>
 </html>

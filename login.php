@@ -17,10 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['prenom'] = $personne['prenom'];
         $_SESSION['nom'] = $personne['nom'];
         $_SESSION['est_admin'] = $personne['est_admin'];
+        $_SESSION['est_moniteur'] = $personne['est_moniteur'];
 
         if ($personne['est_admin']) {
             header("Location: page_admin.php");
-        } else {
+        } 
+        elseif($personne['est_moniteur']) {
+            header("Location: calendar_moniteur.php");
+        }
+        else {
             header("Location: index.php");
         }
         exit;
@@ -166,8 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="left-links">
             <a href="index.php">Accueil</a>
             <a href="calendar.php">Calendrier</a>
-            <a href="reservation.php">Réservation</a>
-            <a href="mes_reservations.php">Mes Réservations</a>
         </div>
         <div class="right-links">
             <a href="register.php">Inscription</a>

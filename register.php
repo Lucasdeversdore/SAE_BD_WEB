@@ -144,7 +144,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="left-links">
             <a href="index.php">Accueil</a>
             <a href="calendar.php">Calendrier</a>
-            <a href="reservation.php">Réservation</a>
         </div>
         <div class="right-links">
             <a href="login.php">Connexion</a>

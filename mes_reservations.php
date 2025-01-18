@@ -1,5 +1,7 @@
 <?php
 session_start();
+
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
@@ -10,181 +12,210 @@ require 'db.php';
 // Vérifie si l'utilisateur est administrateur
 $isAdmin = isset($_SESSION['est_admin']);
 
-// Suppression de réservation
-if (isset($_POST['delete_reservation'])) {
-    $idPoney = $_POST['delete_id_poney'];
-    $idSeance = $_POST['delete_id_seance'];
-    $deleteSql = "DELETE FROM PARTICIPER WHERE idPoney = ? AND idSeance = ? AND idCl = ?";
-    $stmtDelete = $pdo->prepare($deleteSql);
-    $stmtDelete->execute([$idPoney, $idSeance, $_SESSION['user_id']]);
+// Gestion de l'annulation d'une réservation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_reservation'])) {
+    $idSeance = $_POST['idSeance'];
+    $idPoney = $_POST['idPoney'];
 
-    echo "<p style='color: green;'>Réservation supprimée avec succès !</p>";
-    header("Location: mes_reservations.php");
-    exit;
+    $sqlDeleteReservation = "DELETE FROM PARTICIPER WHERE idSeance = ? AND idPoney = ? AND idCl = ?";
+    $stmtDelete = $pdo->prepare($sqlDeleteReservation);
+    $stmtDelete->execute([$idSeance, $idPoney, $_SESSION['user_id']]);
 }
 
-// Récupération des réservations
+// Récupération des réservations de l'utilisateur
 $sqlReservations = "
-    SELECT P.nomP, S.dateDebut, S.dateFin, PR.idPoney, PR.idSeance
+    SELECT 
+        S.idSeance, 
+        S.dateDebut, 
+        S.duree,
+        P.nomP AS poneyNom, 
+        M.idMoniteur, 
+        PR.idPoney, 
+        PERS.prenom || ' ' || PERS.nom AS moniteurNom
     FROM PARTICIPER PR
-    JOIN PONEY P ON PR.idPoney = P.idPoney
     JOIN SEANCE S ON PR.idSeance = S.idSeance
+    JOIN PONEY P ON PR.idPoney = P.idPoney
+    JOIN MONITEUR M ON S.idMoniteur = M.idMoniteur
+    JOIN PERSONNE PERS ON M.idPersonne = PERS.idPersonne
     WHERE PR.idCl = ?
     ORDER BY S.dateDebut";
 $stmtReservations = $pdo->prepare($sqlReservations);
 $stmtReservations->execute([$_SESSION['user_id']]);
 $reservations = $stmtReservations->fetchAll(PDO::FETCH_ASSOC);
-?>
 
+// Préparation des données pour le calendrier
+$offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+$dateDebut = date('Y-m-d', strtotime("now +$offset week"));
+$dateFin = date('Y-m-d', strtotime("now +$offset week +6 days"));
+
+$heures = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+$jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+// Préparation des réservations sous forme de tableau pour accès rapide
+$reservationMap = [];
+foreach ($reservations as $reservation) {
+    $jour = date('N', strtotime($reservation['dateDebut'])) - 1; // 0 = Lundi
+    $heure = date('H:i', strtotime($reservation['dateDebut']));
+    $reservationMap["$jour-$heure"] = $reservation;
+}
+?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Réservations</title>
+    <title>Mes Réservations - Centre Équestre</title>
     <style>
-
-        html, body {
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f4f7fc;
             color: #333;
-            height: 100%;
         }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-
         .nav {
             background-color: #00796b;
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-
         .nav a {
             color: white;
             text-decoration: none;
             margin: 0 15px;
             font-weight: 500;
-            transition: opacity 0.3s ease;
         }
-
         .nav a:hover {
             opacity: 0.8;
         }
-
-
-        .les_reserv {
-            padding: 40px 20px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+        }
+        th, td {
+            padding: 15px;
             text-align: center;
-            flex: 1;
+            border: 1px solid #ddd;
         }
-
-        .liste_reserv {
-            margin-top: 20px;
-        }
-
-        .une_reserv {
-            background-color: #d7e9dc;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            text-align: left;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .une_reserv h3 {
-            font-size: 20px;
-            color: #004d40;
-            margin: 0;
-        }
-
-        .une_reserv p {
-            margin: 8px 0;
-        }
-
-        button {
-            background-color: #e53935;
+        th {
+            background-color: #00796b;
             color: white;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
+        }
+        td.reserved {
+            background-color: #bbdefb; /* Bleu clair */
+            position: relative;
+        }
+        td.reserved form {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+        }
+        td.libre {
+            background-color: #e8f5e9;
+        }
+        .week-nav {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .week-nav button {
             padding: 10px 20px;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
+            border: none;
+            border-radius: 5px;
+            background-color: #00796b;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
         }
-
-        button:hover {
-            background-color: #c62828;
+        .week-nav button:disabled {
+            background-color: #ccc;
         }
-
-
         footer {
             background-color: #00796b;
             color: white;
             text-align: center;
             padding: 15px 0;
-            margin-top: auto;
+        }
+        .cancel-button {
+            background-color: #e53935;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .cancel-button:hover {
+            background-color: #c62828;
         }
     </style>
 </head>
 <body>
-
     <div class="nav">
-        <div>
-            <a href="<?= $isAdmin ? 'page_admin.php' : 'index.php' ?>">Accueil</a>
-            <a href="calendar.php">Calendrier</a>
-            <a href="reservation.php">Réservation</a>
-            <a href="mes_reservations.php">Mes Réservations</a>
-        </div>
-        <div>
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <span class="user-info">
-                    Bonjour, <?= htmlspecialchars($_SESSION['prenom']) . ' ' . htmlspecialchars($_SESSION['nom']) ?>
-                </span>
-                <a href="logout.php">Déconnexion</a>
-            <?php endif; ?>
-        </div>
+        <a href="<?= $isAdmin ? 'page_admin.php' : 'index.php' ?>">Accueil</a>
+        <a href="calendar.php">Calendrier</a>
+        <a href="reservation.php">Réservation</a>
+        <a href="mes_reservations.php">Mes Réservations</a>
     </div>
 
+    <h1 style="text-align: center; color: #00796b;">Mes Réservations</h1>
+    <h2 style="text-align: center; color: #555;">Semaine du <?= date('d/m/Y', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?></h2>
 
-    <div class="les_reserv">
-        <h1>Mes Réservations</h1>
-        <?php if (empty($reservations)): ?>
-            <p>Aucune réservation trouvée.</p>
-        <?php else: ?>
-            <div class="liste_reserv">
-                <?php foreach ($reservations as $reservation): ?>
-                    <div class="une_reserv">
-                        <h3>Poney : <?= htmlspecialchars($reservation['nomP']) ?></h3>
-                        <p><strong>Date de début :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateDebut'])) ?></p>
-                        <p><strong>Date de fin :</strong> <?= date("d/m/Y H:i", strtotime($reservation['dateFin'])) ?></p>
+    <div class="week-nav">
+        <a href="mes_reservations.php?offset=<?= $offset - 1 ?>">
+            <button <?= $offset <= 0 ? 'disabled' : '' ?>>Semaine précédente</button>
+        </a>
+        <a href="mes_reservations.php?offset=<?= $offset + 1 ?>">
+            <button>Semaine suivante</button>
+        </a>
+    </div>
 
-                        <form method="POST" action="mes_reservations.php">
-                            <input type="hidden" name="delete_id_poney" value="<?= $reservation['idPoney'] ?>">
-                            <input type="hidden" name="delete_id_seance" value="<?= $reservation['idSeance'] ?>">
-                            <button type="submit" name="delete_reservation">Supprimer</button>
-                        </form>
-                    </div>
+    <div style="overflow-x: auto; padding: 0 20px;">
+        <table>
+            <tr>
+                <th>Heure</th>
+                <?php foreach ($jours as $jour): ?>
+                    <th><?= $jour ?></th>
                 <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+            </tr>
+            <?php foreach ($heures as $heure): ?>
+                <tr>
+                    <td><?= $heure ?></td>
+                    <?php foreach ($jours as $index => $jour): ?>
+                        <?php
+                        $reservationKey = "$index-$heure";
+                        if (isset($reservationMap[$reservationKey])):
+                            $reservation = $reservationMap[$reservationKey];
+                            $poneyNom = htmlspecialchars($reservation['poneyNom']);
+                            $moniteurNom = htmlspecialchars($reservation['moniteurNom']);
+                            $idSeance = $reservation['idSeance'];
+                            $idPoney = $reservation['idPoney'];
+                        ?>
+                            <td class="reserved">
+                                <strong><?= $poneyNom ?></strong><br>
+                                Moniteur : <?= $moniteurNom ?><br>
+                                <form method="POST">
+                                    <input type="hidden" name="idSeance" value="<?= $idSeance ?>">
+                                    <input type="hidden" name="idPoney" value="<?= $idPoney ?>">
+                                    <button class="cancel-button" type="submit" name="cancel_reservation">Annuler</button>
+                                </form>
+                            </td>
+                        <?php else: ?>
+                            <td class="libre"></td>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </tr>
+            <?php endforeach; ?>
+        </table>
     </div>
-    
+
     <footer>
-        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés. <a href="contact.php">Contactez-nous</a></p>
+        <p>Centre Équestre Grand Galop &copy; 2025. Tous droits réservés.</p>
     </footer>
 </body>
 </html>
