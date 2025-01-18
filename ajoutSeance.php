@@ -185,9 +185,6 @@ if (isset($_POST['ajouter_seance'])) {
     <div class="nav">
         <div class="left-links">
             <a href="page_admin.php">Accueil</a>
-            <a href="calendar.php">Calendrier</a>
-            <a href="reservation.php">Réservation</a>
-            <a href="mes_reservations.php">Mes Réservations</a>
         </div>
         <div class="right-links">
             <?php if (isset($_SESSION['user_id'])): ?>

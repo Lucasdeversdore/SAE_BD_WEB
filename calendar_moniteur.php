@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 
 // Vérifier si l'utilisateur est connecté et s'il est moniteur
@@ -8,6 +12,20 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'moniteur') {
 }
 
 require 'db.php';
+
+// Récupérer l'idMoniteur à partir de l'idPersonne
+$sqlMoniteur = "SELECT idMoniteur FROM MONITEUR WHERE idPersonne = ?";
+$stmtMoniteur = $pdo->prepare($sqlMoniteur);
+$stmtMoniteur->execute([$_SESSION['user_id']]);
+$moniteur = $stmtMoniteur->fetch(PDO::FETCH_ASSOC);
+
+// Si aucun idMoniteur n'est trouvé, afficher une erreur
+if (!$moniteur) {
+    echo "Erreur : Aucun moniteur associé à cet utilisateur.";
+    exit;
+}
+
+$idMoniteur = $moniteur['idMoniteur'];
 
 // Gestion des semaines : Calcul de la date de début (lundi) et de fin (dimanche)
 $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
@@ -27,17 +45,23 @@ $sqlSeances = "
         S.niveau
     FROM SEANCE S
     JOIN COURS C ON S.idCours = C.idCours
-    WHERE S.idMoniteur = ? AND S.dateDebut BETWEEN ? AND ?
+    WHERE S.idMoniteur = ? 
+      AND DATE(S.dateDebut) BETWEEN ? AND ?
     ORDER BY S.dateDebut
 ";
+
 $stmtSeances = $pdo->prepare($sqlSeances);
-$stmtSeances->execute([$_SESSION['user_id'], $dateDebut, $dateFin]);
+$stmtSeances->execute([$idMoniteur, $dateDebut, $dateFin]);
 $seances = $stmtSeances->fetchAll(PDO::FETCH_ASSOC);
+
+// Si aucune séance n'est trouvée, initialise un tableau vide
+if (!$seances) {
+    $seances = [];
+}
 
 // Heures d'affichage
 $heures = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
 $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-
 ?>
 
 <!DOCTYPE html>
@@ -148,7 +172,7 @@ $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche
             background-color: #a5d6a7;
         }
 
-        td.reserved:hover {
+        td.seance {
             background-color: #90caf9;
         }
 
@@ -225,7 +249,6 @@ $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche
                 padding: 8px;
             }
         }
-
     </style>
 </head>
 <body>
@@ -260,44 +283,50 @@ $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche
                     <th><?= $jour ?></th>
                 <?php endforeach; ?>
             </tr>
-            <?php
-            $usedCells = [];
-            foreach ($heures as $heure): ?>
+            <?php if (empty($seances)): ?>
                 <tr>
-                    <td><?= $heure ?></td>
-                    <?php foreach ($jours as $jourIndex => $jour): ?>
-                        <?php
-                        $cellKey = "$jourIndex-$heure";
-                        if (isset($usedCells[$cellKey])) {
-                            continue;
-                        }
-            
-                        $seanceTrouvee = false;
-                        foreach ($seances as $seance) {
-                            $jourCorrected = ($seance['jour'] == 0) ? 6 : $seance['jour'] - 1;
-                            if ($jourCorrected == $jourIndex && $seance['heure'] == $heure) {
-                                $seanceTrouvee = true;
-                                $rowspan = $seance['duree'];
-            
-                                for ($i = 0; $i < $rowspan; $i++) {
-                                    $usedCells["$jourIndex-" . date('H:i', strtotime("+$i hour", strtotime($heure)))] = true;
-                                }
-                                ?>
-                                <td class="seance" rowspan="<?= $rowspan ?>">
-                                    <p><strong>Cours :</strong> <?= htmlspecialchars($seance['coursType']) ?></p>
-                                    <p><strong>Niveau :</strong> <?= htmlspecialchars($seance['niveau']) ?></p>
-                                    <p><strong>Participants :</strong> <?= $seance['nbParticipants'] ?>/<?= $seance['nbPersonneMax'] ?></p>
-                                </td>
-                                <?php
-                                break;
-                            }
-                        }
-                        if (!$seanceTrouvee): ?>
-                            <td></td>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
+                    <td colspan="<?= count($jours) + 1 ?>" style="text-align: center;">
+                        Aucune séance prévue cette semaine.
+                    </td>
                 </tr>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach ($heures as $heure): ?>
+                    <tr>
+                        <td><?= $heure ?></td>
+                        <?php foreach ($jours as $jourIndex => $jour): ?>
+                            <?php
+                            $cellKey = "$jourIndex-$heure";
+                            if (isset($usedCells[$cellKey])) {
+                                continue;
+                            }
+
+                            $seanceTrouvee = false;
+                            foreach ($seances as $seance) {
+                                $jourCorrected = ($seance['jour'] == 0) ? 6 : $seance['jour'] - 1;
+                                if ($jourCorrected == $jourIndex && $seance['heure'] == $heure) {
+                                    $seanceTrouvee = true;
+                                    $rowspan = $seance['duree'];
+
+                                    for ($i = 0; $i < $rowspan; $i++) {
+                                        $usedCells["$jourIndex-" . date('H:i', strtotime("+$i hour", strtotime($heure)))] = true;
+                                    }
+                                    ?>
+                                    <td class="seance" rowspan="<?= $rowspan ?>">
+                                        <p><strong>Cours :</strong> <?= htmlspecialchars($seance['coursType']) ?></p>
+                                        <p><strong>Niveau :</strong> <?= htmlspecialchars($seance['niveau']) ?></p>
+                                        <p><strong>Participants :</strong> <?= $seance['nbParticipants'] ?>/<?= $seance['nbPersonneMax'] ?></p>
+                                    </td>
+                                    <?php
+                                    break;
+                                }
+                            }
+                            if (!$seanceTrouvee): ?>
+                                <td></td>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </table>
     </main>
 
